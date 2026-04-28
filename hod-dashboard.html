@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HOD Dashboard — EduTrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+<div class="dashboard-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-crest">
+        <svg viewBox="0 0 80 80" fill="none"><polygon points="40,5 75,25 75,55 40,75 5,55 5,25" stroke="#C9A84C" stroke-width="2" fill="none"/><text x="40" y="47" text-anchor="middle" font-family="Cormorant Garamond" font-size="22" fill="#C9A84C" font-weight="700">EC</text></svg>
+      </div>
+      <div class="brand-text"><span class="brand-name">VEMU</span><span class="brand-subtitle">Department Attendance</span></div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" style="background:rgba(155,89,182,0.15);color:#C39BD3">PS</div>
+      <div class="user-info"><div class="user-name">Dr. Priya Sharma</div><div class="user-role" style="color:#C39BD3">HOD — Computer Science</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Department</div>
+        <div class="nav-item active" onclick="showView('hodDashboard')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Department Overview
+        </div>
+        <div class="nav-item" onclick="showView('hodReports')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Reports
+        </div>
+        <div class="nav-item" onclick="showView('hodAlerts')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Low Attendance Alerts
+          <span class="nav-badge">12</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Management</div>
+        <div class="nav-item" onclick="showView('hodLeaves')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+          Leave Approvals
+          <span class="nav-badge">3</span>
+        </div>
+        <div class="nav-item" onclick="showView('faculty')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Faculty Monitoring
+        </div>
+        <div class="nav-item" onclick="showView('students')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          Department Students
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="logout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="top-header">
+      <div class="header-title">
+        <h2 id="pageTitle">Department Overview</h2>
+        <p id="pageSubtitle">Computer Science Engineering · April 2026</p>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="showToast('Report downloaded!','success')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="icon-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="badge-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- HOD DASHBOARD -->
+      <div class="view active" id="view-hodDashboard">
+        <div class="stat-cards">
+          <div class="stat-card stat-purple">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+            <div class="stat-body"><div class="stat-value">820</div><div class="stat-label">Dept. Students</div></div>
+          </div>
+          <div class="stat-card stat-blue">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div class="stat-body"><div class="stat-value">28</div><div class="stat-label">Faculty Members</div></div>
+          </div>
+          <div class="stat-card stat-green">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <div class="stat-body"><div class="stat-value">86%</div><div class="stat-label">Dept. Avg Attendance</div></div>
+          </div>
+          <div class="stat-card stat-red">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+            <div class="stat-body"><div class="stat-value">12</div><div class="stat-label">Below 75%</div></div>
+          </div>
+          <div class="stat-card stat-gold">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
+            <div class="stat-body"><div class="stat-value">3</div><div class="stat-label">Pending Leaves</div></div>
+          </div>
+        </div>
+
+        <!-- Semester-wise breakdown -->
+        <div class="card mb-6">
+          <div class="card-title">Semester-wise Attendance Breakdown — CSE</div>
+          <div class="card-sub">Average attendance by semester this month</div>
+          <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:12px;margin-top:16px">
+            <div class="semester-col" style="text-align:center" onclick="showToast('Sem 1 details loaded','info')">
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:6px">Sem 1</div>
+              <div style="height:120px;background:var(--navy-750);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden;cursor:pointer">
+                <div style="width:100%;height:91%;background:linear-gradient(180deg,#C39BD3,rgba(155,89,182,0.6));border-radius:6px 6px 0 0"></div>
+              </div>
+              <div style="margin-top:4px;font-weight:600;color:#C39BD3;font-size:14px">91%</div>
+            </div>
+            <div class="semester-col" style="text-align:center">
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:6px">Sem 2</div>
+              <div style="height:120px;background:var(--navy-750);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden;cursor:pointer">
+                <div style="width:100%;height:87%;background:linear-gradient(180deg,var(--gold-500),rgba(201,168,76,0.6));border-radius:6px 6px 0 0"></div>
+              </div>
+              <div style="margin-top:4px;font-weight:600;color:var(--gold-400);font-size:14px">87%</div>
+            </div>
+            <div class="semester-col" style="text-align:center">
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:6px">Sem 3</div>
+              <div style="height:120px;background:var(--navy-750);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden;cursor:pointer">
+                <div style="width:100%;height:86%;background:linear-gradient(180deg,var(--success),rgba(39,174,96,0.6));border-radius:6px 6px 0 0"></div>
+              </div>
+              <div style="margin-top:4px;font-weight:600;color:var(--success);font-size:14px">86%</div>
+            </div>
+            <div class="semester-col" style="text-align:center">
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:6px">Sem 4</div>
+              <div style="height:120px;background:var(--navy-750);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden;cursor:pointer">
+                <div style="width:100%;height:82%;background:linear-gradient(180deg,#5DADE2,rgba(41,128,185,0.6));border-radius:6px 6px 0 0"></div>
+              </div>
+              <div style="margin-top:4px;font-weight:600;color:#5DADE2;font-size:14px">82%</div>
+            </div>
+            <div class="semester-col" style="text-align:center">
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:6px">Sem 5</div>
+              <div style="height:120px;background:var(--navy-750);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden;cursor:pointer">
+                <div style="width:100%;height:88%;background:linear-gradient(180deg,var(--gold-500),rgba(201,168,76,0.6));border-radius:6px 6px 0 0"></div>
+              </div>
+              <div style="margin-top:4px;font-weight:600;color:var(--gold-400);font-size:14px">88%</div>
+            </div>
+            <div class="semester-col" style="text-align:center">
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:6px">Sem 6</div>
+              <div style="height:120px;background:var(--navy-750);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden;cursor:pointer">
+                <div style="width:100%;height:79%;background:linear-gradient(180deg,var(--warning),rgba(243,156,18,0.6));border-radius:6px 6px 0 0"></div>
+              </div>
+              <div style="margin-top:4px;font-weight:600;color:var(--warning);font-size:14px">79%</div>
+            </div>
+            <div class="semester-col" style="text-align:center">
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:6px">Sem 7</div>
+              <div style="height:120px;background:var(--navy-750);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden;cursor:pointer">
+                <div style="width:100%;height:90%;background:linear-gradient(180deg,var(--success),rgba(39,174,96,0.6));border-radius:6px 6px 0 0"></div>
+              </div>
+              <div style="margin-top:4px;font-weight:600;color:var(--success);font-size:14px">90%</div>
+            </div>
+            <div class="semester-col" style="text-align:center">
+              <div style="font-size:11px;color:var(--gray-500);margin-bottom:6px">Sem 8</div>
+              <div style="height:120px;background:var(--navy-750);border-radius:6px;display:flex;align-items:flex-end;overflow:hidden;cursor:pointer">
+                <div style="width:100%;height:84%;background:linear-gradient(180deg,#C39BD3,rgba(155,89,182,0.6));border-radius:6px 6px 0 0"></div>
+              </div>
+              <div style="margin-top:4px;font-weight:600;color:#C39BD3;font-size:14px">84%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Faculty + Quick Actions -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Faculty Attendance Marking Status</div>
+            <div class="card-sub">Today's marking completion</div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--gray-300)">Prof. Sunita Reddy</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="badge badge-success">3/3 Done</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--gray-300)">Prof. Arun Kumar</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="badge badge-warning">1/3 Pending</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--gray-300)">Dr. Rekha Nair</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="badge badge-danger">Not Started</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--gray-300)">Prof. Suresh B.</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="badge badge-success">4/4 Done</span>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:13px;color:var(--gray-300)">Prof. Meena R.</span>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span class="badge badge-warning">2/3 Pending</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Quick Actions</div>
+            <div class="card-sub">Frequently used HOD tasks</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+              <button class="btn btn-secondary" style="flex-direction:column;padding:14px;gap:6px;height:auto" onclick="showView('hodReports')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold-500)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                <span>Generate Report</span>
+              </button>
+              <button class="btn btn-secondary" style="flex-direction:column;padding:14px;gap:6px;height:auto" onclick="showView('hodLeaves')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5DADE2" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <span>Approve Leaves</span>
+              </button>
+              <button class="btn btn-secondary" style="flex-direction:column;padding:14px;gap:6px;height:auto" onclick="showView('hodAlerts')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                <span>View Alerts</span>
+              </button>
+              <button class="btn btn-secondary" style="flex-direction:column;padding:14px;gap:6px;height:auto" onclick="showToast('Defaulter report downloaded!','success')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Defaulter List</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOD REPORTS -->
+      <div class="view" id="view-hodReports">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Department Reports</h1><p>Generate HOD-level attendance analytics</p></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Generate Report</div>
+            <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+              <div class="form-group"><label class="form-label">Department</label>
+                <select class="form-control" id="hodDepartmentFilter"><option value="">Loading departments...</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Report Type</label>
+                <select class="form-control"><option>Semester-wise Summary</option><option>Subject-wise Report</option><option>Defaulter List</option><option>Faculty Marking Report</option><option>Monthly Trends</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Semester</label>
+                <select class="form-control"><option>All Semesters</option><option>Sem 1</option><option>Sem 2</option><option>Sem 3</option><option>Sem 4</option><option>Sem 5</option><option>Sem 6</option><option>Sem 7</option><option>Sem 8</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Month</label>
+                <select class="form-control"><option>April 2026</option><option>March 2026</option><option>February 2026</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Format</label>
+                <select class="form-control"><option>PDF</option><option>Excel</option><option>CSV</option></select>
+              </div>
+              <button class="btn btn-primary" onclick="showToast('Report downloaded!','success')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download
+              </button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Subject-wise Summary — Sem 3 CSE</div>
+            <div class="table-wrap" style="margin-top:12px">
+              <table>
+                <thead><tr><th>Subject</th><th>Faculty</th><th>Avg Att.</th><th>Below 75%</th></tr></thead>
+                <tbody>
+                  <tr><td>CS301 DS</td><td>Dr. Priya</td><td><span class="att-pct high">88%</span></td><td>3</td></tr>
+                  <tr><td>CS302 DBMS</td><td>Prof. Sunita</td><td><span class="att-pct high">84%</span></td><td>5</td></tr>
+                  <tr><td>CS303 OS</td><td>Prof. Sunita</td><td><span class="att-pct medium">79%</span></td><td>8</td></tr>
+                  <tr><td>MA201 Maths</td><td>Prof. Kavya</td><td><span class="att-pct medium">76%</span></td><td>12</td></tr>
+                  <tr><td>CS302L Lab</td><td>Prof. Sunita</td><td><span class="att-pct high">91%</span></td><td>1</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOD LEAVE APPROVALS -->
+      <div class="view" id="view-hodLeaves">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Leave Approvals</h1><p>Review and approve faculty and student leave requests in your department</p></div>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Applicant</th><th>Role</th><th>Type</th><th>Dates</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                <tr><td>#L001</td><td>Arjun Nair</td><td><span class="badge badge-neutral">Student</span></td><td>OD</td><td>Apr 25</td><td>Industrial Visit</td><td><span class="badge badge-warning">Pending</span></td><td><button class="btn btn-xs btn-success" onclick="approveHOD(this,'#L001')">Approve</button> <button class="btn btn-xs btn-danger" onclick="rejectHOD(this,'#L001')">Reject</button></td></tr>
+                <tr><td>#L002</td><td>Prof. Arun Kumar</td><td><span class="badge badge-info">Faculty</span></td><td>Medical</td><td>Apr 26–27</td><td>Surgery follow-up</td><td><span class="badge badge-warning">Pending</span></td><td><button class="btn btn-xs btn-success" onclick="approveHOD(this,'#L002')">Approve</button> <button class="btn btn-xs btn-danger" onclick="rejectHOD(this,'#L002')">Reject</button></td></tr>
+                <tr><td>#L003</td><td>Meera Patel</td><td><span class="badge badge-neutral">Student</span></td><td>Personal</td><td>Apr 28</td><td>Family function</td><td><span class="badge badge-warning">Pending</span></td><td><button class="btn btn-xs btn-success" onclick="approveHOD(this,'#L003')">Approve</button> <button class="btn btn-xs btn-danger" onclick="rejectHOD(this,'#L003')">Reject</button></td></tr>
+                <tr><td>#L004</td><td>Sneha Pillai</td><td><span class="badge badge-neutral">Student</span></td><td>OD</td><td>Apr 24</td><td>Paper presentation</td><td><span class="badge badge-success">Approved</span></td><td><span style="color:var(--gray-500);font-size:12px">Done</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOD ALERTS -->
+      <div class="view" id="view-hodAlerts">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Low Attendance Alerts</h1><p>Students in your department needing immediate attention</p></div>
+          <div class="page-header-right">
+            <button class="btn btn-primary" onclick="showToast('Bulk warnings sent to 12 students!','success')">Send All Warnings</button>
+          </div>
+        </div>
+        <div class="alert-banner danger mb-6">
+          🚨 <strong>12 students</strong> in the CSE department have attendance below 75%. Immediate action required.
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Roll No.</th><th>Name</th><th>Sem</th><th>Overall Att.</th><th>Lowest Subject</th><th>Contact</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr><td>21CS034</td><td>Rohan M.</td><td>3</td><td><span class="att-pct low">38%</span></td><td>CS302 (48%)</td><td>+91 98765 43210</td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">Send Warning</button></td></tr>
+                <tr><td>21CS067</td><td>Aisha Noor</td><td>3</td><td><span class="att-pct low">49%</span></td><td>CS303 (52%)</td><td>+91 87654 32109</td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">Send Warning</button></td></tr>
+                <tr><td>22CS014</td><td>Mohan T.</td><td>2</td><td><span class="att-pct low">54%</span></td><td>MA201 (44%)</td><td>+91 76543 21098</td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">Send Warning</button></td></tr>
+                <tr><td>23CS009</td><td>Priya N.</td><td>1</td><td><span class="att-pct low">58%</span></td><td>PHY101 (50%)</td><td>+91 65432 10987</td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">Send Warning</button></td></tr>
+                <tr><td>20CS045</td><td>Vijay K.</td><td>5</td><td><span class="att-pct medium">62%</span></td><td>CS501 (55%)</td><td>+91 54321 09876</td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">Send Warning</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- FACULTY MONITORING -->
+      <div class="view" id="view-faculty">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Faculty Monitoring</h1><p>Monitor attendance marking status for CSE faculty</p></div>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Faculty ID</th><th>Name</th><th>Subjects</th><th>Today's Status</th><th>Classes Marked</th><th>Last Marked</th><th>Attendance Rate</th></tr></thead>
+              <tbody>
+                <tr><td>TCH001</td><td>Prof. Sunita Reddy</td><td>3</td><td><span class="badge badge-success">Complete</span></td><td>3/3</td><td>10:00 AM</td><td><span class="att-pct high">100%</span></td></tr>
+                <tr><td>TCH004</td><td>Prof. Arun Kumar</td><td>3</td><td><span class="badge badge-warning">Partial</span></td><td>1/3</td><td>9:30 AM</td><td><span class="att-pct medium">72%</span></td></tr>
+                <tr><td>TCH007</td><td>Dr. Rekha Nair</td><td>2</td><td><span class="badge badge-danger">Not Started</span></td><td>0/2</td><td>—</td><td><span class="att-pct low">0%</span></td></tr>
+                <tr><td>TCH010</td><td>Prof. Suresh B.</td><td>4</td><td><span class="badge badge-success">Complete</span></td><td>4/4</td><td>11:00 AM</td><td><span class="att-pct high">100%</span></td></tr>
+                <tr><td>TCH012</td><td>Prof. Meena R.</td><td>3</td><td><span class="badge badge-warning">Partial</span></td><td>2/3</td><td>10:30 AM</td><td><span class="att-pct medium">78%</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEPT STUDENTS -->
+      <div class="view" id="view-students">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Department Students</h1><p>All CSE students attendance overview</p></div>
+          <div class="page-header-right">
+            <select class="form-control"><option>All Semesters</option><option>Sem 1</option><option>Sem 3</option><option>Sem 5</option><option>Sem 7</option></select>
+            <button class="btn btn-secondary" onclick="showToast('List exported!','success')">Export</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Roll No.</th><th>Name</th><th>Sem</th><th>Section</th><th>Attendance</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr><td>21CS001</td><td>Arjun Nair</td><td>3</td><td>A</td><td><span class="att-pct high">88%</span></td><td><span class="badge badge-success">Regular</span></td><td><button class="btn btn-xs btn-secondary">View</button></td></tr>
+                <tr><td>21CS034</td><td>Rohan M.</td><td>3</td><td>A</td><td><span class="att-pct low">38%</span></td><td><span class="badge badge-danger">Critical</span></td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">⚠ Warn</button></td></tr>
+                <tr><td>21CS022</td><td>Sneha Pillai</td><td>3</td><td>A</td><td><span class="att-pct high">95%</span></td><td><span class="badge badge-success">Regular</span></td><td><button class="btn btn-xs btn-secondary">View</button></td></tr>
+                <tr><td>20CS045</td><td>Vijay Kumar</td><td>5</td><td>B</td><td><span class="att-pct medium">62%</span></td><td><span class="badge badge-warning">Warning</span></td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">⚠ Warn</button></td></tr>
+                <tr><td>22CS014</td><td>Mohan Tiwari</td><td>2</td><td>A</td><td><span class="att-pct low">54%</span></td><td><span class="badge badge-danger">Critical</span></td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">⚠ Warn</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="/dashboard.js"></script>
+<script>
+function approveHOD(btn, id) {
+  btn.closest('tr').querySelector('td:nth-child(7)').innerHTML = '<span class="badge badge-success">Approved</span>';
+  btn.closest('td').innerHTML = '<span style="color:var(--gray-500);font-size:12px">Done</span>';
+  showToast(`Leave ${id} approved by HOD!`, 'success');
+}
+function rejectHOD(btn, id) {
+  btn.closest('tr').querySelector('td:nth-child(7)').innerHTML = '<span class="badge badge-danger">Rejected</span>';
+  btn.closest('td').innerHTML = '<span style="color:var(--gray-500);font-size:12px">Done</span>';
+  showToast(`Leave ${id} rejected.`, 'warning');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Dashboard — Excellence College</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/dashboard.css">
+<style>
+  .attendance-circle { position:relative; width:140px; height:140px; margin:0 auto 1rem; }
+  .attendance-circle svg { transform:rotate(-90deg); }
+  .circle-track { fill:none; stroke:rgba(212,175,55,0.15); stroke-width:10; }
+  .circle-fill { fill:none; stroke:#D4AF37; stroke-width:10; stroke-linecap:round; transition:stroke-dashoffset 1.2s ease; }
+  .circle-fill.danger { stroke:#e74c3c; }
+  .circle-fill.warning { stroke:#f39c12; }
+  .circle-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
+  .circle-pct { font-family:'Cormorant Garamond',serif; font-size:2rem; font-weight:700; color:#D4AF37; display:block; line-height:1; }
+  .circle-pct.danger { color:#e74c3c; }
+  .circle-pct.warning { color:#f39c12; }
+  .circle-label { font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; }
+  .subject-bar { height:8px; border-radius:4px; background:rgba(212,175,55,0.12); margin-top:0.4rem; overflow:hidden; }
+  .subject-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#D4AF37,#f0d060); transition:width 1s ease; }
+  .subject-bar-fill.danger { background:linear-gradient(90deg,#e74c3c,#ff7675); }
+  .subject-bar-fill.warning { background:linear-gradient(90deg,#f39c12,#fdcb6e); }
+  .sem-tab { padding:0.45rem 1rem; border-radius:20px; cursor:pointer; font-size:0.8rem; font-weight:500; color:var(--text-muted); background:transparent; border:1px solid rgba(212,175,55,0.2); transition:all .2s; }
+  .sem-tab.active, .sem-tab:hover { background:rgba(212,175,55,0.15); color:#D4AF37; border-color:#D4AF37; }
+  .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .cal-day { aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:6px; font-size:0.72rem; font-weight:500; cursor:default; }
+  .cal-present { background:rgba(39,174,96,0.25); color:#27ae60; }
+  .cal-absent  { background:rgba(231,76,60,0.25); color:#e74c3c; }
+  .cal-od      { background:rgba(52,152,219,0.25); color:#3498db; }
+  .cal-leave   { background:rgba(243,156,18,0.25); color:#f39c12; }
+  .cal-holiday { background:rgba(155,89,182,0.2); color:#9b59b6; }
+  .cal-today   { border:2px solid #D4AF37; }
+  .cal-empty   { background:transparent; }
+  .cal-header-day { font-size:0.65rem; color:var(--text-muted); text-align:center; padding:4px 0; text-transform:uppercase; }
+  .warning-card { background:rgba(231,76,60,0.1); border:1px solid rgba(231,76,60,0.3); border-radius:12px; padding:1rem 1.25rem; }
+  .warning-card.mild { background:rgba(243,156,18,0.1); border-color:rgba(243,156,18,0.3); }
+  .leave-badge { display:inline-block; padding:0.2rem 0.65rem; border-radius:20px; font-size:0.72rem; font-weight:600; }
+  .leave-pending  { background:rgba(243,156,18,0.2); color:#f39c12; }
+  .leave-approved { background:rgba(39,174,96,0.2); color:#27ae60; }
+  .leave-rejected { background:rgba(231,76,60,0.2); color:#e74c3c; }
+</style>
+</head>
+<body>
+<div class="dashboard-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="20,4 36,14 36,30 20,38 4,30 4,14" fill="none" stroke="#D4AF37" stroke-width="2"/>
+          <text x="20" y="26" text-anchor="middle" fill="#D4AF37" font-size="14" font-weight="bold" font-family="serif">E</text>
+        </svg>
+      </div>
+      <div>
+        <div class="sidebar-title">VEMU</div>
+        <div class="sidebar-subtitle">Student Portal</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-title">Overview</div>
+      <a class="nav-item active" onclick="showView('dashboard')" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        My Dashboard
+      </a>
+      <a class="nav-item" onclick="showView('attendance')" data-view="attendance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        My Attendance
+      </a>
+      <a class="nav-item" onclick="showView('subjects')" data-view="subjects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        Subject-wise
+      </a>
+      <a class="nav-item" onclick="showView('calendar')" data-view="calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar
+      </a>
+      <div class="nav-section-title">Reports</div>
+      <a class="nav-item" onclick="showView('semester')" data-view="semester">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Semester Reports
+      </a>
+      <a class="nav-item" onclick="showView('download')" data-view="download">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Reports
+      </a>
+      <div class="nav-section-title">Requests</div>
+      <a class="nav-item" onclick="showView('leave')" data-view="leave">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        Apply Leave / OD
+      </a>
+      <a class="nav-item" onclick="showView('warnings')" data-view="warnings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Warnings
+      </a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">AR</div>
+        <div class="user-info">
+          <div class="user-name" id="student-name">Arjun R.</div>
+          <div class="user-role">Student · CSE Sem 5</div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="topbar">
+      <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="page-title" id="page-title">My Dashboard</div>
+      <div class="topbar-actions">
+        <div class="topbar-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="badge-dot"></span>
+        </div>
+        <div class="topbar-date" id="topbar-date"></div>
+      </div>
+    </header>
+
+    <!-- ===================== DASHBOARD VIEW ===================== -->
+    <div class="view-section active" id="view-dashboard">
+      <div class="section-header">
+        <h2>Welcome Back, <span id="welcome-name" style="color:#D4AF37">Arjun</span> 👋</h2>
+        <p class="section-subtitle">Here's your attendance summary for the current semester</p>
+      </div>
+
+      <!-- Overall Attendance + Quick Stats -->
+      <div class="grid-4" style="margin-bottom:1.5rem;">
+        <div class="stat-card gold">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="stat-number" id="overall-pct">78%</div>
+          <div class="stat-label">Overall Attendance</div>
+          <div class="stat-trend up">▲ 3% this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div class="stat-number" style="color:#27ae60">112</div>
+          <div class="stat-label">Classes Attended</div>
+          <div class="stat-trend up">of 144 total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(231,76,60,0.15)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+          <div class="stat-number" style="color:#e74c3c">32</div>
+          <div class="stat-label">Classes Missed</div>
+          <div class="stat-trend down">▼ Need 18 more to reach 75%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(52,152,219,0.15)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="stat-number" style="color:#3498db">2</div>
+          <div class="stat-label">Pending Leaves</div>
+          <div class="stat-trend">Awaiting approval</div>
+        </div>
+      </div>
+
+      <!-- Subject Overview Cards -->
+      <div class="content-card" style="margin-bottom:1.5rem;">
+        <div class="card-header">
+          <h3>Subject-wise Attendance (Quick View)</h3>
+          <button class="btn btn-outline btn-sm" onclick="showView('subjects')">View All</button>
+        </div>
+        <div class="grid-3">
+          <div id="subj-mini-cards"></div>
+        </div>
+      </div>
+
+      <!-- Warning Alert -->
+      <div class="warning-card" id="warning-alert" style="margin-bottom:1.5rem; display:none;">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <svg viewBox="0 0 24 24" width="22" fill="none" stroke="#e74c3c" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <div>
+            <strong style="color:#e74c3c;">Attendance Warning!</strong>
+            <p style="font-size:0.82rem;color:var(--text-muted);margin:0.2rem 0 0;">Your attendance in <strong>3 subjects</strong> is below the 75% threshold. You may be barred from exams if not improved.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Attendance Log + Leave Status -->
+      <div class="grid-2">
+        <div class="content-card">
+          <div class="card-header"><h3>Recent Attendance Log</h3></div>
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Subject</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Apr 22</td><td>Data Structures</td><td><span class="badge badge-success">Present</span></td></tr>
+              <tr><td>Apr 22</td><td>Networks</td><td><span class="badge badge-success">Present</span></td></tr>
+              <tr><td>Apr 21</td><td>OS</td><td><span class="badge badge-danger">Absent</span></td></tr>
+              <tr><td>Apr 21</td><td>DBMS</td><td><span class="badge badge-info">OD</span></td></tr>
+              <tr><td>Apr 20</td><td>Data Structures</td><td><span class="badge badge-success">Present</span></td></tr>
+              <tr><td>Apr 20</td><td>Maths</td><td><span class="badge badge-warning">Leave</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="content-card">
+          <div class="card-header"><h3>My Leave Applications</h3><button class="btn btn-gold btn-sm" onclick="showView('leave')">+ Apply</button></div>
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Type</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td>Apr 18</td><td>Medical Leave</td><td><span class="leave-badge leave-approved">Approved</span></td></tr>
+              <tr><td>Apr 15</td><td>OD – Hackathon</td><td><span class="leave-badge leave-approved">Approved</span></td></tr>
+              <tr><td>Apr 10</td><td>Personal Leave</td><td><span class="leave-badge leave-rejected">Rejected</span></td></tr>
+              <tr><td>Apr 05</td><td>Medical Leave</td><td><span class="leave-badge leave-pending">Pending</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== ATTENDANCE VIEW ===================== -->
+    <div class="view-section" id="view-attendance">
+      <div class="section-header">
+        <h2>My Attendance</h2>
+        <p class="section-subtitle">Detailed attendance records for current semester</p>
+      </div>
+      <div class="grid-3" style="margin-bottom:1.5rem;">
+        <div class="content-card" style="text-align:center;">
+          <div class="attendance-circle">
+            <svg viewBox="0 0 140 140" width="140" height="140">
+              <circle class="circle-track" cx="70" cy="70" r="56"/>
+              <circle class="circle-fill" cx="70" cy="70" r="56" stroke-dasharray="351.9" stroke-dashoffset="77.4" id="circ-overall"/>
+            </svg>
+            <div class="circle-text">
+              <span class="circle-pct" id="circ-overall-pct">78%</span>
+              <span class="circle-label">Overall</span>
+            </div>
+          </div>
+          <p style="color:var(--text-muted);font-size:0.82rem;">Need <strong style="color:#D4AF37;">18 more classes</strong> to reach 75% safely</p>
+        </div>
+        <div class="content-card" style="text-align:center;">
+          <div class="attendance-circle">
+            <svg viewBox="0 0 140 140" width="140" height="140">
+              <circle class="circle-track" cx="70" cy="70" r="56"/>
+              <circle class="circle-fill circle-fill-2" cx="70" cy="70" r="56" stroke-dasharray="351.9" stroke-dashoffset="0" id="circ-theory" style="stroke:#27ae60"/>
+            </svg>
+            <div class="circle-text">
+              <span class="circle-pct" style="color:#27ae60">85%</span>
+              <span class="circle-label">Theory</span>
+            </div>
+          </div>
+          <p style="color:var(--text-muted);font-size:0.82rem;">Above required threshold ✓</p>
+        </div>
+        <div class="content-card" style="text-align:center;">
+          <div class="attendance-circle">
+            <svg viewBox="0 0 140 140" width="140" height="140">
+              <circle class="circle-track" cx="70" cy="70" r="56"/>
+              <circle class="circle-fill danger" cx="70" cy="70" r="56" stroke-dasharray="351.9" stroke-dashoffset="175.9" id="circ-lab"/>
+            </svg>
+            <div class="circle-text">
+              <span class="circle-pct danger">50%</span>
+              <span class="circle-label">Practical</span>
+            </div>
+          </div>
+          <p style="color:#e74c3c;font-size:0.82rem;">⚠ Critically low — take action</p>
+        </div>
+      </div>
+
+      <div class="content-card">
+        <div class="card-header">
+          <h3>Detailed Log</h3>
+          <div style="display:flex;gap:0.5rem;">
+            <select class="form-select" style="padding:0.4rem 0.75rem;font-size:0.82rem;">
+              <option>All Subjects</option>
+              <option>Data Structures</option>
+              <option>DBMS</option>
+              <option>Networks</option>
+              <option>OS</option>
+              <option>Maths</option>
+            </select>
+            <select class="form-select" style="padding:0.4rem 0.75rem;font-size:0.82rem;">
+              <option>April 2025</option>
+              <option>March 2025</option>
+              <option>February 2025</option>
+            </select>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr><th>Date</th><th>Day</th><th>Subject</th><th>Faculty</th><th>Hour</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Apr 22, 2025</td><td>Tuesday</td><td>Data Structures</td><td>Dr. Kavitha</td><td>1st</td><td><span class="badge badge-success">Present</span></td></tr>
+            <tr><td>Apr 22, 2025</td><td>Tuesday</td><td>Networks</td><td>Prof. Rajan</td><td>3rd</td><td><span class="badge badge-success">Present</span></td></tr>
+            <tr><td>Apr 21, 2025</td><td>Monday</td><td>OS</td><td>Dr. Priya</td><td>2nd</td><td><span class="badge badge-danger">Absent</span></td></tr>
+            <tr><td>Apr 21, 2025</td><td>Monday</td><td>DBMS</td><td>Prof. Suresh</td><td>4th</td><td><span class="badge badge-info">OD</span></td></tr>
+            <tr><td>Apr 20, 2025</td><td>Sunday</td><td>—</td><td>—</td><td>—</td><td><span class="badge" style="background:rgba(155,89,182,0.2);color:#9b59b6">Holiday</span></td></tr>
+            <tr><td>Apr 19, 2025</td><td>Saturday</td><td>Maths</td><td>Dr. Anand</td><td>1st</td><td><span class="badge badge-warning">Leave</span></td></tr>
+            <tr><td>Apr 18, 2025</td><td>Friday</td><td>Data Structures</td><td>Dr. Kavitha</td><td>1st</td><td><span class="badge badge-success">Present</span></td></tr>
+            <tr><td>Apr 18, 2025</td><td>Friday</td><td>DBMS Lab</td><td>Prof. Suresh</td><td>2nd-3rd</td><td><span class="badge badge-success">Present</span></td></tr>
+            <tr><td>Apr 17, 2025</td><td>Thursday</td><td>Networks</td><td>Prof. Rajan</td><td>1st</td><td><span class="badge badge-danger">Absent</span></td></tr>
+            <tr><td>Apr 17, 2025</td><td>Thursday</td><td>OS Lab</td><td>Dr. Priya</td><td>3rd-4th</td><td><span class="badge badge-danger">Absent</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===================== SUBJECTS VIEW ===================== -->
+    <div class="view-section" id="view-subjects">
+      <div class="section-header">
+        <h2>Subject-wise Attendance</h2>
+        <p class="section-subtitle">Breakdown by each enrolled subject</p>
+      </div>
+      <div id="subject-cards-grid" class="grid-3"></div>
+    </div>
+
+    <!-- ===================== CALENDAR VIEW ===================== -->
+    <div class="view-section" id="view-calendar">
+      <div class="section-header">
+        <h2>Attendance Calendar</h2>
+        <p class="section-subtitle">Visual attendance history for the month</p>
+      </div>
+      <div class="content-card">
+        <div class="card-header">
+          <button class="btn btn-outline btn-sm" id="cal-prev">&#8592;</button>
+          <h3 id="cal-month-title" style="margin:0">April 2025</h3>
+          <button class="btn btn-outline btn-sm" id="cal-next">&#8594;</button>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;">
+          <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;"><span style="width:14px;height:14px;background:rgba(39,174,96,0.3);border-radius:3px;display:inline-block"></span>Present</span>
+          <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;"><span style="width:14px;height:14px;background:rgba(231,76,60,0.3);border-radius:3px;display:inline-block"></span>Absent</span>
+          <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;"><span style="width:14px;height:14px;background:rgba(52,152,219,0.3);border-radius:3px;display:inline-block"></span>OD</span>
+          <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;"><span style="width:14px;height:14px;background:rgba(243,156,18,0.3);border-radius:3px;display:inline-block"></span>Leave</span>
+          <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;"><span style="width:14px;height:14px;background:rgba(155,89,182,0.2);border-radius:3px;display:inline-block"></span>Holiday</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;" id="calendar-container"></div>
+      </div>
+    </div>
+
+    <!-- ===================== SEMESTER VIEW ===================== -->
+    <div class="view-section" id="view-semester">
+      <div class="section-header">
+        <h2>Semester Reports</h2>
+        <p class="section-subtitle">Attendance statistics across all semesters</p>
+      </div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.5rem;" id="sem-tabs">
+        <button class="sem-tab active" onclick="selectSem(this,'sem5')" data-sem="sem5">Sem 5 (Current)</button>
+        <button class="sem-tab" onclick="selectSem(this,'sem4')" data-sem="sem4">Sem 4</button>
+        <button class="sem-tab" onclick="selectSem(this,'sem3')" data-sem="sem3">Sem 3</button>
+        <button class="sem-tab" onclick="selectSem(this,'sem2')" data-sem="sem2">Sem 2</button>
+        <button class="sem-tab" onclick="selectSem(this,'sem1')" data-sem="sem1">Sem 1</button>
+      </div>
+      <div id="sem-report-content"></div>
+    </div>
+
+    <!-- ===================== DOWNLOAD VIEW ===================== -->
+    <div class="view-section" id="view-download">
+      <div class="section-header">
+        <h2>Download Reports</h2>
+        <p class="section-subtitle">Export your attendance data in various formats</p>
+      </div>
+      <div class="grid-3">
+        <div class="content-card" style="text-align:center;padding:2rem;">
+          <div style="width:60px;height:60px;background:rgba(212,175,55,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <svg viewBox="0 0 24 24" width="28" fill="none" stroke="#D4AF37" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <h3 style="margin-bottom:0.5rem">Full Report (PDF)</h3>
+          <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:1rem">Complete attendance report with charts and subject breakdown</p>
+          <button class="btn btn-gold" onclick="downloadReport('pdf')">Download PDF</button>
+        </div>
+        <div class="content-card" style="text-align:center;padding:2rem;">
+          <div style="width:60px;height:60px;background:rgba(39,174,96,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <svg viewBox="0 0 24 24" width="28" fill="none" stroke="#27ae60" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          </div>
+          <h3 style="margin-bottom:0.5rem">Excel Export</h3>
+          <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:1rem">Spreadsheet with day-by-day attendance for all subjects</p>
+          <button class="btn btn-outline" onclick="downloadReport('excel')">Download Excel</button>
+        </div>
+        <div class="content-card" style="text-align:center;padding:2rem;">
+          <div style="width:60px;height:60px;background:rgba(52,152,219,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <svg viewBox="0 0 24 24" width="28" fill="none" stroke="#3498db" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <h3 style="margin-bottom:0.5rem">CSV Data</h3>
+          <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:1rem">Raw attendance data in CSV format for analysis</p>
+          <button class="btn btn-outline" onclick="downloadReport('csv')">Download CSV</button>
+        </div>
+      </div>
+      <div class="content-card" style="margin-top:1.5rem">
+        <div class="card-header"><h3>Custom Report</h3></div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Semester</label>
+            <select class="form-select"><option>Sem 5 (Current)</option><option>Sem 4</option><option>Sem 3</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <select class="form-select"><option>All Subjects</option><option>Data Structures</option><option>DBMS</option><option>Networks</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">From Date</label>
+            <input type="date" class="form-input" value="2025-02-01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">To Date</label>
+            <input type="date" class="form-input" value="2025-04-22">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Format</label>
+            <select class="form-select"><option>PDF</option><option>Excel</option><option>CSV</option></select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:flex-end;">
+            <button class="btn btn-gold" style="width:100%" onclick="downloadReport('custom')">Generate & Download</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== LEAVE VIEW ===================== -->
+    <div class="view-section" id="view-leave">
+      <div class="section-header">
+        <h2>Apply Leave / OD</h2>
+        <p class="section-subtitle">Submit leave or on-duty requests</p>
+      </div>
+      <div class="grid-2">
+        <div class="content-card">
+          <div class="card-header"><h3>New Application</h3></div>
+          <div class="form-group">
+            <label class="form-label">Leave Type</label>
+            <select class="form-select" id="leave-type">
+              <option value="">-- Select Type --</option>
+              <option value="medical">Medical Leave</option>
+              <option value="personal">Personal Leave</option>
+              <option value="od">On Duty (OD)</option>
+              <option value="emergency">Emergency Leave</option>
+            </select>
+          </div>
+          <div class="form-grid" style="grid-template-columns:1fr 1fr">
+            <div class="form-group">
+              <label class="form-label">From Date</label>
+              <input type="date" class="form-input" id="leave-from">
+            </div>
+            <div class="form-group">
+              <label class="form-label">To Date</label>
+              <input type="date" class="form-input" id="leave-to">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Subjects Affected</label>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;">
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;"><input type="checkbox" id="subj-ds"> Data Structures</label>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;"><input type="checkbox" id="subj-dbms"> DBMS</label>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;"><input type="checkbox" id="subj-networks"> Networks</label>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;"><input type="checkbox" id="subj-os"> Operating Systems</label>
+              <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;"><input type="checkbox" id="subj-maths"> Maths</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reason</label>
+            <textarea class="form-textarea" rows="3" placeholder="Explain the reason for leave..." id="leave-reason"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Supporting Document (optional)</label>
+            <input type="file" class="form-input" style="padding:0.5rem" accept=".pdf,.jpg,.png">
+          </div>
+          <button class="btn btn-gold" style="width:100%" onclick="submitLeave()">Submit Application</button>
+        </div>
+        <div class="content-card">
+          <div class="card-header"><h3>My Applications</h3></div>
+          <table class="data-table">
+            <thead><tr><th>Date</th><th>Type</th><th>Days</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Apr 18</td><td>Medical</td><td>1</td>
+                <td><span class="leave-badge leave-approved">Approved</span></td>
+                <td><button class="btn btn-sm btn-outline" onclick="viewLeave()">View</button></td>
+              </tr>
+              <tr>
+                <td>Apr 15</td><td>OD</td><td>1</td>
+                <td><span class="leave-badge leave-approved">Approved</span></td>
+                <td><button class="btn btn-sm btn-outline" onclick="viewLeave()">View</button></td>
+              </tr>
+              <tr>
+                <td>Apr 10</td><td>Personal</td><td>2</td>
+                <td><span class="leave-badge leave-rejected">Rejected</span></td>
+                <td><button class="btn btn-sm btn-outline" onclick="viewLeave()">View</button></td>
+              </tr>
+              <tr>
+                <td>Apr 5</td><td>Medical</td><td>3</td>
+                <td><span class="leave-badge leave-pending">Pending</span></td>
+                <td><button class="btn btn-sm btn-danger" onclick="cancelLeave()">Cancel</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top:1.5rem;padding:1rem;background:rgba(52,152,219,0.08);border-radius:10px;border:1px solid rgba(52,152,219,0.2)">
+            <p style="font-size:0.82rem;color:var(--text-muted);">
+              <strong style="color:#3498db">ℹ Leave Policy:</strong> Medical leaves require a doctor's certificate. OD requires event proof. Applications must be submitted at least 24 hours in advance. All leaves are subject to HOD/faculty approval.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== WARNINGS VIEW ===================== -->
+    <div class="view-section" id="view-warnings">
+      <div class="section-header">
+        <h2>Attendance Warnings</h2>
+        <p class="section-subtitle">Subjects requiring immediate attention</p>
+      </div>
+      <div id="warnings-container"></div>
+      <div class="content-card" style="margin-top:1.5rem">
+        <div class="card-header"><h3>Condonation Request</h3></div>
+        <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem">If your attendance shortage is due to valid reasons, you may apply for a condonation (attendance relaxation) from the HOD.</p>
+        <div class="form-group">
+          <label class="form-label">Subject</label>
+          <select class="form-select"><option>Operating Systems (52%)</option><option>DBMS Lab (58%)</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reason for Shortage</label>
+          <textarea class="form-textarea" rows="3" placeholder="Explain why your attendance is below threshold..."></textarea>
+        </div>
+        <button class="btn btn-gold" onclick="showToast('Condonation request submitted to HOD','success')">Submit Condonation Request</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/dashboard.js"></script>
+<script>
+const SUBJECTS = [
+  { name:'Data Structures', code:'CS301', faculty:'Dr. Kavitha', total:30, attended:26, type:'Theory' },
+  { name:'Database Mgmt',   code:'CS302', faculty:'Prof. Suresh', total:28, attended:20, type:'Theory' },
+  { name:'Networks',        code:'CS303', faculty:'Prof. Rajan',  total:25, attended:19, type:'Theory' },
+  { name:'Operating Sys',   code:'CS304', faculty:'Dr. Priya',   total:24, attended:12, type:'Theory' },
+  { name:'Maths III',       code:'MA301', faculty:'Dr. Anand',   total:22, attended:18, type:'Theory' },
+  { name:'DBMS Lab',        code:'CS305', faculty:'Prof. Suresh', total:12, attended:7,  type:'Lab'    },
+  { name:'Networks Lab',    code:'CS306', faculty:'Prof. Rajan',  total:10, attended:8,  type:'Lab'    },
+];
+const SEM_DATA = {
+  sem5:{ label:'Semester 5 (Current)', overall:78, subjects:SUBJECTS },
+  sem4:{ label:'Semester 4', overall:82, subjects:[
+    { name:'COA',       code:'CS201', faculty:'Dr. Ramesh',  total:32, attended:28, type:'Theory' },
+    { name:'DAA',       code:'CS202', faculty:'Prof. Meena', total:30, attended:25, type:'Theory' },
+    { name:'TOC',       code:'CS203', faculty:'Dr. Kumar',   total:28, attended:22, type:'Theory' },
+    { name:'SE',        code:'CS204', faculty:'Prof. Leela', total:25, attended:21, type:'Theory' },
+    { name:'Maths IV',  code:'MA201', faculty:'Dr. Anand',   total:22, attended:19, type:'Theory' },
+    { name:'COA Lab',   code:'CS205', faculty:'Dr. Ramesh',  total:14, attended:12, type:'Lab'    },
+  ]},
+  sem3:{ label:'Semester 3', overall:91, subjects:[
+    { name:'DS', code:'CS101', faculty:'Dr. Kavitha', total:30, attended:28, type:'Theory' },
+    { name:'OOP', code:'CS102', faculty:'Prof. Sita', total:28, attended:26, type:'Theory' },
+    { name:'DM', code:'MA101', faculty:'Dr. Anand',   total:25, attended:23, type:'Theory' },
+  ]},
+  sem2:{ label:'Semester 2', overall:88, subjects:[] },
+  sem1:{ label:'Semester 1', overall:94, subjects:[] },
+};
+let currentSem = 'sem5';
+
+function pct(sub){ return Math.round((sub.attended/sub.total)*100); }
+function pctColor(p){ return p<60?'danger':p<75?'warning':''; }
+function pctStyle(p){ return p<60?'color:#e74c3c':p<75?'color:#f39c12':'color:#27ae60'; }
+
+function renderSubjectCards(subjects, container){
+  if(!subjects.length){
+    container.innerHTML='<p style="color:var(--text-muted);padding:1rem">No data available.</p>';
+    return;
+  }
+  container.innerHTML = subjects.map(s=>{
+    const p=pct(s), cls=pctColor(p);
+    const dashOff = 351.9*(1-p/100);
+    return `<div class="content-card" style="padding:1.25rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.75rem">
+        <div>
+          <div style="font-weight:600;font-size:0.95rem">${s.name}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">${s.code} · ${s.type}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">${s.faculty}</div>
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;${pctStyle(p)}">${p}%</div>
+      </div>
+      <div class="subject-bar"><div class="subject-bar-fill ${cls}" style="width:${p}%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem">
+        <span>Attended: <strong>${s.attended}/${s.total}</strong></span>
+        <span>${p<75?`<span style="color:${p<60?'#e74c3c':'#f39c12'}">⚠ Below 75%</span>`:'<span style="color:#27ae60">✓ Safe</span>'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMiniSubjectCards(){
+  const grid=document.getElementById('subj-mini-cards');
+  if(!grid) return;
+  grid.style.cssText='display:contents';
+  const parent=grid.parentElement;
+  parent.innerHTML='';
+  SUBJECTS.forEach(s=>{
+    const p=pct(s), cls=pctColor(p);
+    const div=document.createElement('div');
+    div.className='content-card';
+    div.style.cssText='padding:1rem';
+    div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem">
+      <strong style="font-size:0.88rem">${s.name}</strong>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;${pctStyle(p)}">${p}%</span>
+    </div>
+    <div class="subject-bar"><div class="subject-bar-fill ${cls}" style="width:${p}%"></div></div>`;
+    parent.appendChild(div);
+  });
+}
+
+function renderWarnings(){
+  const c=document.getElementById('warnings-container');
+  const danger=SUBJECTS.filter(s=>pct(s)<60);
+  const warn=SUBJECTS.filter(s=>{ const p=pct(s); return p>=60&&p<75; });
+  if(!danger.length&&!warn.length){
+    c.innerHTML='<div style="text-align:center;padding:3rem;color:#27ae60"><svg viewBox="0 0 24 24" width="48" fill="none" stroke="#27ae60" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><h3 style="margin-top:1rem">No Warnings!</h3><p>All your subjects are above 75%.</p></div>';
+    return;
+  }
+  let html='';
+  if(danger.length){
+    html+=`<div class="warning-card" style="margin-bottom:1rem"><h4 style="color:#e74c3c;margin-bottom:0.75rem">🚨 Critical — Below 60%</h4>`;
+    danger.forEach(s=>{ html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(231,76,60,0.1)"><span>${s.name} (${s.code})</span><strong style="color:#e74c3c">${pct(s)}%</strong></div>`; });
+    html+='</div>';
+  }
+  if(warn.length){
+    html+=`<div class="warning-card mild" style="margin-bottom:1rem"><h4 style="color:#f39c12;margin-bottom:0.75rem">⚠ Warning — Below 75%</h4>`;
+    warn.forEach(s=>{ html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid rgba(243,156,18,0.1)"><span>${s.name} (${s.code})</span><strong style="color:#f39c12">${pct(s)}%</strong></div>`; });
+    html+='</div>';
+  }
+  c.innerHTML=html;
+  if(danger.length||warn.length){
+    const wa=document.getElementById('warning-alert');
+    if(wa) wa.style.display='block';
+  }
+}
+
+function renderCalendar(){
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const status={ 1:'present',2:'present',3:'absent',4:'od',5:'holiday',7:'present',8:'leave',9:'present',10:'present',11:'absent',12:'holiday',14:'present',15:'od',16:'present',17:'absent',18:'present',19:'holiday',21:'present',22:'present',23:'today',24:'present',25:'absent' };
+  const cont=document.getElementById('calendar-container');
+  let html=days.map(d=>`<div class="cal-header-day">${d}</div>`).join('');
+  for(let i=0;i<2;i++) html+=`<div class="cal-empty"></div>`; // April 1 = Tuesday
+  for(let d=1;d<=30;d++){
+    const s=status[d]||'empty';
+    html+=`<div class="cal-day cal-${s}">${d}</div>`;
+  }
+  cont.innerHTML=html;
+}
+
+function selectSem(btn, sem){
+  document.querySelectorAll('.sem-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  currentSem=sem;
+  renderSemReport();
+}
+
+function renderSemReport(){
+  const data=SEM_DATA[currentSem];
+  const c=document.getElementById('sem-report-content');
+  const pctColor=p=>p<75?'#e74c3c':p<85?'#f39c12':'#27ae60';
+  c.innerHTML=`<div class="grid-3" style="margin-bottom:1.5rem">
+    <div class="stat-card gold">
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+      <div class="stat-number">${data.overall}%</div>
+      <div class="stat-label">Overall Attendance</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div>
+      <div class="stat-number">${data.subjects.length}</div>
+      <div class="stat-label">Enrolled Subjects</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(231,76,60,0.1)"><svg viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+      <div class="stat-number" style="color:#e74c3c">${data.subjects.filter(s=>pct(s)<75).length}</div>
+      <div class="stat-label">Subjects Below 75%</div>
+    </div>
+  </div>
+  <div class="content-card">
+    <div class="card-header"><h3>${data.label} — Subject Summary</h3></div>
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Code</th><th>Faculty</th><th>Attended</th><th>Total</th><th>%</th><th>Status</th></tr></thead>
+      <tbody>${data.subjects.map(s=>`<tr>
+        <td>${s.name}</td><td>${s.code}</td><td>${s.faculty}</td>
+        <td>${s.attended}</td><td>${s.total}</td>
+        <td style="font-weight:600;color:${pctColor(pct(s))}">${pct(s)}%</td>
+        <td>${pct(s)<75?`<span class="badge badge-danger">Below 75%</span>`:`<span class="badge badge-success">Safe</span>`}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+  </div>`;
+}
+
+function downloadReport(type){
+  const labels={ pdf:'PDF', excel:'Excel', csv:'CSV', custom:'Custom' };
+  showToast(`Generating ${labels[type]} report... Download will start shortly.`,'success');
+  setTimeout(()=>showToast('Report ready! (Demo mode — no actual file)','info'),1500);
+}
+
+function submitLeave(){
+  const type=document.getElementById('leave-type').value;
+  const from=document.getElementById('leave-from').value;
+  const reason=document.getElementById('leave-reason').value;
+  if(!type||!from||!reason){ showToast('Please fill all required fields','error'); return; }
+  showToast('Leave application submitted successfully!','success');
+  document.getElementById('leave-type').value='';
+  document.getElementById('leave-from').value='';
+  document.getElementById('leave-to').value='';
+  document.getElementById('leave-reason').value='';
+}
+function viewLeave(){ showToast('Opening leave details...','info'); }
+function cancelLeave(){ showToast('Leave application cancelled.','warning'); }
+
+// Override showView for student
+const origShow = window.showView;
+window.showView = function(viewId){
+  document.querySelectorAll('.view-section').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const target=document.getElementById('view-'+viewId);
+  if(target) target.classList.add('active');
+  const nav=document.querySelector(`[data-view="${viewId}"]`);
+  if(nav) nav.classList.add('active');
+  const titles={dashboard:'My Dashboard',attendance:'My Attendance',subjects:'Subject-wise Attendance',calendar:'Attendance Calendar',semester:'Semester Reports',download:'Download Reports',leave:'Apply Leave / OD',warnings:'Attendance Warnings'};
+  document.getElementById('page-title').textContent=titles[viewId]||'Dashboard';
+};
+
+// Init
+document.addEventListener('DOMContentLoaded',()=>{
+  const d=new Date();
+  const el=document.getElementById('topbar-date');
+  if(el) el.textContent=d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short'});
+  renderMiniSubjectCards();
+  renderWarnings();
+  renderCalendar();
+  renderSemReport();
+  renderSubjectCards(SUBJECTS, document.getElementById('subject-cards-grid'));
+  showView('dashboard');
+});
+</script>
+</body>
+</html>
+
+
+

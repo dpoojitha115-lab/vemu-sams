@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VEMU Institute of Technology - SAMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/login.css">
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="login-wrapper">
+    <div class="left-panel">
+      <div class="college-brand">
+        <div class="college-crest">
+          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="40,5 75,25 75,55 40,75 5,55 5,25" stroke="#C9A84C" stroke-width="2" fill="none"/>
+            <polygon points="40,15 65,30 65,50 40,65 15,50 15,30" stroke="#C9A84C" stroke-width="1" fill="none" opacity="0.5"/>
+            <text x="40" y="47" text-anchor="middle" font-family="Cormorant Garamond" font-size="22" fill="#C9A84C" font-weight="700">VT</text>
+          </svg>
+        </div>
+        <div class="college-name">
+          <span class="college-main">VEMU</span>
+          <span class="college-sub">Institute of Technology</span>
+          <span class="college-tagline">P. Kothakota, Near Pakala · Andhra Pradesh · Student Attendance Portal</span>
+        </div>
+      </div>
+
+      <div class="hero-text">
+        <h1>Student Attendance<br/><em>Management</em><br/>System</h1>
+        <p>A unified portal for tracking, managing, and analysing attendance across VEMU Institute of Technology departments and semesters.</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat"><span class="stat-num">3200+</span><span class="stat-label">Students</span></div>
+        <div class="stat"><span class="stat-num">220+</span><span class="stat-label">Faculty</span></div>
+        <div class="stat"><span class="stat-num">8+</span><span class="stat-label">Departments</span></div>
+        <div class="stat"><span class="stat-num">24/7</span><span class="stat-label">Portal Access</span></div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="login-card">
+        <div class="login-header">
+          <h2>Welcome Back</h2>
+          <p>Sign in to the VEMU attendance portal</p>
+        </div>
+
+        <div class="role-selector">
+          <button class="role-btn active" data-role="admin">Admin</button>
+          <button class="role-btn" data-role="hod">HOD</button>
+          <button class="role-btn" data-role="teacher">Teacher</button>
+          <button class="role-btn" data-role="student">Student</button>
+        </div>
+
+        <form class="login-form" id="loginForm">
+          <div class="form-group">
+            <label>
+              <span class="label-text">User ID / Roll Number</span>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </span>
+                <input type="text" id="userId" placeholder="Enter your user ID or roll number" required autocomplete="username"/>
+              </div>
+            </label>
+          </div>
+
+          <div class="form-group" id="departmentGroup" style="display:none">
+            <label>
+              <span class="label-text">Department</span>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="M15 10h.01"/><path d="M15 14h.01"/></svg>
+                </span>
+                <select id="departmentCode" required>
+                  <option value="">Select department</option>
+                </select>
+              </div>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label>
+              <span class="label-text">Password</span>
+              <div class="input-wrap">
+                <span class="input-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+                <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password"/>
+                <button type="button" class="toggle-pwd" id="togglePwd">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </label>
+          </div>
+
+          <div class="form-extras">
+            <label class="checkbox-wrap">
+              <input type="checkbox" id="rememberMe"/>
+              <span class="checkmark"></span>
+              <span>Remember me</span>
+            </label>
+            <a href="#" class="forgot-link">Forgot password?</a>
+          </div>
+
+          <div style="font-size:12px;color:rgba(255,255,255,0.68);margin-bottom:14px" id="roleHint">
+            Students can sign in with roll number. HOD login requires department selection.
+          </div>
+
+          <button type="submit" class="login-btn" id="loginBtn">
+            <span class="btn-text">Sign In</span>
+            <span class="btn-loader" style="display:none">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            </span>
+            <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+
+          <div class="error-msg" id="errorMsg"></div>
+        </form>
+
+        <div class="demo-credentials">
+          <p class="demo-title">Demo Credentials</p>
+          <div class="demo-grid">
+            <div class="demo-item" data-user="ADMIN001" data-pass="admin123" data-role="admin">
+              <span class="demo-badge admin">Admin</span>
+              <span>ADMIN001 / admin123</span>
+            </div>
+            <div class="demo-item" data-user="HOD001" data-pass="hod123" data-role="hod" data-dept="CSE">
+              <span class="demo-badge hod">HOD</span>
+              <span>HOD001 / hod123 / CSE</span>
+            </div>
+            <div class="demo-item" data-user="TCH001" data-pass="teach123" data-role="teacher">
+              <span class="demo-badge teacher">Teacher</span>
+              <span>TCH001 / teach123</span>
+            </div>
+            <div class="demo-item" data-user="21CS001" data-pass="stu123" data-role="student">
+              <span class="demo-badge student">Student</span>
+              <span>21CS001 / stu123</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/login.js"></script>
+</body>
+</html>

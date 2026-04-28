@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teacher Dashboard — EduTrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+<div class="dashboard-layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-crest">
+        <svg viewBox="0 0 80 80" fill="none"><polygon points="40,5 75,25 75,55 40,75 5,55 5,25" stroke="#C9A84C" stroke-width="2" fill="none"/><text x="40" y="47" text-anchor="middle" font-family="Cormorant Garamond" font-size="22" fill="#C9A84C" font-weight="700">EC</text></svg>
+      </div>
+      <div class="brand-text"><span class="brand-name">VEMU</span><span class="brand-subtitle">Faculty Attendance</span></div>
+    </div>
+    <div class="sidebar-user">
+      <div class="user-avatar" style="background:rgba(41,128,185,0.15);color:#5DADE2">SR</div>
+      <div class="user-info"><div class="user-name">Prof. Sunita Reddy</div><div class="user-role" style="color:#5DADE2">Faculty — CSE</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Overview</div>
+        <div class="nav-item active" onclick="showView('dashboard')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">Attendance</div>
+        <div class="nav-item" onclick="showView('markAttendance')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Mark Attendance
+        </div>
+        <div class="nav-item" onclick="showView('mySubjects')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          My Subjects
+        </div>
+        <div class="nav-item" onclick="showView('myStudents')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          My Students
+        </div>
+        <div class="nav-item" onclick="showView('reports')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Reports
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">My Account</div>
+        <div class="nav-item" onclick="showView('applyLeave')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Apply Leave
+        </div>
+        <div class="nav-item" onclick="showView('alerts')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Send Warnings
+          <span class="nav-badge">8</span>
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="logout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="top-header">
+      <div class="header-title">
+        <h2 id="pageTitle">Dashboard</h2>
+        <p id="pageSubtitle">Prof. Sunita Reddy · Computer Science · Thursday, April 23, 2026</p>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="showToast('Attendance report downloaded!','success')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
+        <button class="icon-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="badge-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div class="view active" id="view-dashboard">
+        <div class="stat-cards">
+          <div class="stat-card stat-blue">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+            <div class="stat-body"><div class="stat-value">124</div><div class="stat-label">Total Students</div></div>
+          </div>
+          <div class="stat-card stat-gold">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+            <div class="stat-body"><div class="stat-value">3</div><div class="stat-label">Subjects</div></div>
+          </div>
+          <div class="stat-card stat-green">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+            <div class="stat-body"><div class="stat-value">84%</div><div class="stat-label">Avg Attendance</div></div>
+          </div>
+          <div class="stat-card stat-red">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg></div>
+            <div class="stat-body"><div class="stat-value">8</div><div class="stat-label">Below 75% Alert</div></div>
+          </div>
+        </div>
+
+        <!-- Today's classes -->
+        <div class="grid-2 mb-6">
+          <div class="card">
+            <div class="card-title">Today's Classes</div>
+            <div class="card-sub">Thursday, April 23 · Your schedule</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--navy-750);border-radius:8px;border-left:3px solid var(--gold-500)">
+                <div>
+                  <div style="font-weight:500;color:var(--white);margin-bottom:2px">CS302 — DBMS</div>
+                  <div style="font-size:12px;color:var(--gray-400)">9:00 AM – 10:00 AM · CSE-A Sem 3</div>
+                </div>
+                <span class="badge badge-success">Done</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--navy-750);border-radius:8px;border-left:3px solid #5DADE2">
+                <div>
+                  <div style="font-weight:500;color:var(--white);margin-bottom:2px">CS303 — Operating Systems</div>
+                  <div style="font-size:12px;color:var(--gray-400)">11:00 AM – 12:00 PM · CSE-B Sem 3</div>
+                </div>
+                <button class="btn btn-xs btn-primary" onclick="showView('markAttendance')">Mark Now</button>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--navy-750);border-radius:8px;border-left:3px solid var(--gray-500)">
+                <div>
+                  <div style="font-weight:500;color:var(--gray-400);margin-bottom:2px">CS302 — DBMS Lab</div>
+                  <div style="font-size:12px;color:var(--gray-500)">2:00 PM – 4:00 PM · CSE-A Sem 3</div>
+                </div>
+                <span class="badge badge-neutral">Upcoming</span>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Attendance Completion</div>
+            <div class="card-sub">Classes marked this week</div>
+            <div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--gray-300)">CS302 — DBMS</span><span style="color:var(--success)">8/10</span></div>
+                <div class="progress-bar"><div class="progress-fill high" style="width:80%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--gray-300)">CS303 — Operating Systems</span><span style="color:var(--warning)">6/10</span></div>
+                <div class="progress-bar"><div class="progress-fill medium" style="width:60%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--gray-300)">DBMS Lab</span><span style="color:var(--success)">9/10</span></div>
+                <div class="progress-bar"><div class="progress-fill high" style="width:90%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Low attendance students -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div><div class="card-title">Students Needing Attention</div><div class="card-sub">Attendance below 75% in your subjects</div></div>
+            <button class="btn btn-sm btn-primary" onclick="showView('alerts')">Send Warnings</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Student</th><th>Roll No.</th><th>Subject</th><th>Attendance</th><th>Missing Classes</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr><td>Rohan M.</td><td>21CS034</td><td>CS302 DBMS</td><td><span class="att-pct low">48%</span></td><td>12 classes</td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent to Rohan M. via WhatsApp & Email!','warning')">⚠ Warn</button></td></tr>
+                <tr><td>Aisha N.</td><td>21CS067</td><td>CS303 OS</td><td><span class="att-pct low">52%</span></td><td>10 classes</td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent to Aisha N. via WhatsApp & Email!','warning')">⚠ Warn</button></td></tr>
+                <tr><td>Rahul T.</td><td>21CS088</td><td>CS302 DBMS</td><td><span class="att-pct medium">68%</span></td><td>7 classes</td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent to Rahul T. via WhatsApp & Email!','warning')">⚠ Warn</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MARK ATTENDANCE ===== -->
+      <div class="view" id="view-markAttendance">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Mark Attendance</h1><p>Record today's attendance for your class</p></div>
+        </div>
+        <div class="card mb-6">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Subject</label>
+              <select class="form-control" id="attSubject" onchange="loadStudents()">
+                <option value="">Select Subject</option>
+                <option value="CS302">CS302 — DBMS</option>
+                <option value="CS303">CS303 — Operating Systems</option>
+                <option value="CS302L">CS302L — DBMS Lab</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Class / Section</label>
+              <select class="form-control" id="attSection">
+                <option>CSE-A Sem 3</option>
+                <option>CSE-B Sem 3</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date</label>
+              <input type="date" class="form-control" id="attDate" value="2026-04-23"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Period / Hour</label>
+              <select class="form-control" id="attHour">
+                <option value="1">1st Hour (9—10 AM)</option>
+                <option value="2">2nd Hour (10—11 AM)</option>
+                <option value="3" selected>3rd Hour (11—12 PM)</option>
+                <option value="4">4th Hour (12—1 PM)</option>
+                <option value="5">5th Hour (2—3 PM)</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-secondary" onclick="markAll('present')">✓ Mark All Present</button>
+            <button class="btn btn-secondary" onclick="markAll('absent')">✗ Mark All Absent</button>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0" id="attendanceCard">
+          <div style="padding:16px 24px;border-bottom:1px solid rgba(201,168,76,0.08);display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:500;color:var(--white)" id="attendanceSessionTitle">CS303 — Operating Systems · CSE-B Sem 3</div>
+              <div style="font-size:12px;color:var(--gray-400);margin-top:2px" id="attendanceSessionMeta">42 Students · 3rd Hour · April 23, 2026</div>
+            </div>
+            <div style="font-size:13px;color:var(--gray-300)">Present: <span id="presentCount" style="color:var(--success);font-weight:600">0</span> / 42</div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>Roll No.</th><th>Name</th><th>Attendance</th>
+                <th style="text-align:center">Present</th>
+                <th style="text-align:center">Absent</th>
+                <th style="text-align:center">OD / Leave</th>
+              </tr></thead>
+              <tbody id="attendanceTbody"></tbody>
+            </table>
+          </div>
+          <div style="padding:16px 24px;border-top:1px solid rgba(201,168,76,0.08);display:flex;justify-content:flex-end;gap:10px">
+            <button class="btn btn-secondary" onclick="showToast('Attendance cleared','info')">Clear</button>
+            <button class="btn btn-primary" onclick="submitAttendance()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Submit Attendance
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MY SUBJECTS ===== -->
+      <div class="view" id="view-mySubjects">
+        <div class="page-header">
+          <div class="page-header-left"><h1>My Subjects</h1><p>Subjects assigned to you this semester</p></div>
+        </div>
+        <div class="grid-auto">
+          <div class="card" style="border-top:3px solid var(--gold-500)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div><div class="card-title">CS302 — DBMS</div><div style="font-size:12px;color:var(--gray-400);margin-top:2px">Database Management Systems</div></div>
+              <span class="badge badge-info">CSE Sem 3</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;font-size:12px">
+              <span style="color:var(--gray-400)">Section: <strong style="color:var(--white)">A</strong></span>
+              <span style="color:var(--gray-400)">Students: <strong style="color:var(--white)">42</strong></span>
+              <span style="color:var(--gray-400)">Credits: <strong style="color:var(--white)">4</strong></span>
+              <span style="color:var(--gray-400)">Classes: <strong style="color:var(--white)">38</strong></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill high" style="width:84%"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px">
+              <span style="color:var(--gray-400)">Avg Attendance</span>
+              <span style="color:var(--success)">84%</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn btn-xs btn-primary" onclick="showView('markAttendance')">Mark Now</button>
+              <button class="btn btn-xs btn-secondary" onclick="showToast('Report downloaded','success')">Report</button>
+            </div>
+          </div>
+          <div class="card" style="border-top:3px solid #5DADE2">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div><div class="card-title">CS303 — Operating Systems</div><div style="font-size:12px;color:var(--gray-400);margin-top:2px">OS Concepts & Architecture</div></div>
+              <span class="badge badge-info">CSE Sem 3</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;font-size:12px">
+              <span style="color:var(--gray-400)">Section: <strong style="color:var(--white)">B</strong></span>
+              <span style="color:var(--gray-400)">Students: <strong style="color:var(--white)">40</strong></span>
+              <span style="color:var(--gray-400)">Credits: <strong style="color:var(--white)">3</strong></span>
+              <span style="color:var(--gray-400)">Classes: <strong style="color:var(--white)">34</strong></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill medium" style="width:79%"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px">
+              <span style="color:var(--gray-400)">Avg Attendance</span>
+              <span style="color:var(--success)">79%</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn btn-xs btn-primary" onclick="showView('markAttendance')">Mark Now</button>
+              <button class="btn btn-xs btn-secondary" onclick="showToast('Report downloaded','success')">Report</button>
+            </div>
+          </div>
+          <div class="card" style="border-top:3px solid var(--success)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div><div class="card-title">CS302L — DBMS Lab</div><div style="font-size:12px;color:var(--gray-400);margin-top:2px">Practical Database Lab Sessions</div></div>
+              <span class="badge badge-info">CSE Sem 3</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0;font-size:12px">
+              <span style="color:var(--gray-400)">Section: <strong style="color:var(--white)">A</strong></span>
+              <span style="color:var(--gray-400)">Students: <strong style="color:var(--white)">42</strong></span>
+              <span style="color:var(--gray-400)">Credits: <strong style="color:var(--white)">2</strong></span>
+              <span style="color:var(--gray-400)">Classes: <strong style="color:var(--white)">18</strong></span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill high" style="width:91%"></div></div>
+            <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px">
+              <span style="color:var(--gray-400)">Avg Attendance</span>
+              <span style="color:var(--success)">91%</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="btn btn-xs btn-primary" onclick="showView('markAttendance')">Mark Now</button>
+              <button class="btn btn-xs btn-secondary" onclick="showToast('Report downloaded','success')">Report</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== MY STUDENTS ===== -->
+      <div class="view" id="view-myStudents">
+        <div class="page-header">
+          <div class="page-header-left"><h1>My Students</h1><p>All students in your assigned classes</p></div>
+          <div class="page-header-right">
+            <select class="form-control" id="subFilter">
+              <option value="">All Subjects</option>
+              <option>CS302</option><option>CS303</option><option>CS302L</option>
+            </select>
+            <button class="btn btn-secondary" onclick="showToast('Student list exported','success')">Export</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Roll No.</th><th>Name</th><th>DBMS</th><th>OS</th><th>Lab</th><th>Overall</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr><td>21CS001</td><td>Arjun Nair</td><td><span class="att-pct high">92%</span></td><td><span class="att-pct high">88%</span></td><td><span class="att-pct high">95%</span></td><td><span class="att-pct high">91%</span></td><td><span class="badge badge-success">Regular</span></td><td><button class="btn btn-xs btn-secondary" onclick="showToast('Details opened','info')">View</button></td></tr>
+                <tr><td>21CS034</td><td>Rohan M.</td><td><span class="att-pct low">48%</span></td><td><span class="att-pct low">51%</span></td><td><span class="att-pct medium">65%</span></td><td><span class="att-pct low">54%</span></td><td><span class="badge badge-danger">Critical</span></td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">⚠ Warn</button></td></tr>
+                <tr><td>21CS022</td><td>Sneha Pillai</td><td><span class="att-pct high">95%</span></td><td><span class="att-pct high">89%</span></td><td><span class="att-pct high">100%</span></td><td><span class="att-pct high">94%</span></td><td><span class="badge badge-success">Regular</span></td><td><button class="btn btn-xs btn-secondary" onclick="showToast('Details opened','info')">View</button></td></tr>
+                <tr><td>21CS067</td><td>Aisha Noor</td><td><span class="att-pct medium">70%</span></td><td><span class="att-pct low">52%</span></td><td><span class="att-pct medium">72%</span></td><td><span class="att-pct medium">64%</span></td><td><span class="badge badge-warning">Warning</span></td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">⚠ Warn</button></td></tr>
+                <tr><td>21CS088</td><td>Rahul T.</td><td><span class="att-pct medium">68%</span></td><td><span class="att-pct high">78%</span></td><td><span class="att-pct medium">71%</span></td><td><span class="att-pct medium">72%</span></td><td><span class="badge badge-warning">Warning</span></td><td><button class="btn btn-xs btn-danger" onclick="showToast('Warning sent!','warning')">⚠ Warn</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== REPORTS ===== -->
+      <div class="view" id="view-reports">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Reports</h1><p>Generate and download attendance reports for your subjects</p></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Generate Subject Report</div>
+          <div class="form-row" style="margin-top:16px">
+            <div class="form-group"><label class="form-label">Subject</label>
+              <select class="form-control"><option>CS302 — DBMS</option><option>CS303 — OS</option><option>CS302L — Lab</option></select>
+            </div>
+            <div class="form-group"><label class="form-label">Report Type</label>
+              <select class="form-control"><option>Full Attendance Report</option><option>Defaulter List (&lt;75%)</option><option>Date-wise Report</option></select>
+            </div>
+            <div class="form-group"><label class="form-label">From Date</label><input type="date" class="form-control" value="2026-04-01"/></div>
+            <div class="form-group"><label class="form-label">To Date</label><input type="date" class="form-control" value="2026-04-23"/></div>
+            <div class="form-group"><label class="form-label">Format</label><select class="form-control"><option>PDF</option><option>Excel</option></select></div>
+          </div>
+          <button class="btn btn-primary" onclick="showToast('Report generated!','success')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Report
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== APPLY LEAVE ===== -->
+      <div class="view" id="view-applyLeave">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Apply for Leave</h1><p>Submit a leave or on-duty request</p></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">New Leave Application</div>
+            <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+              <div class="form-group"><label class="form-label">Leave Type</label>
+                <select class="form-control"><option>Medical Leave</option><option>Personal Leave</option><option>On Duty (OD)</option><option>Conference</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">From Date</label><input type="date" class="form-control"/></div>
+              <div class="form-group"><label class="form-label">To Date</label><input type="date" class="form-control"/></div>
+              <div class="form-group"><label class="form-label">Reason</label><textarea class="form-control" rows="3" placeholder="Describe the reason for leave..."></textarea></div>
+              <div class="form-group"><label class="form-label">Supporting Document (optional)</label><input type="file" class="form-control" style="padding:8px"/></div>
+              <button class="btn btn-primary" onclick="showToast('Leave application submitted!','success')">Submit Application</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">My Leave History</div>
+            <div class="card-sub">Previous applications</div>
+            <div class="table-wrap" style="margin-top:12px">
+              <table>
+                <thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr><td>Medical</td><td>Mar 15–16</td><td>2</td><td><span class="badge badge-success">Approved</span></td></tr>
+                  <tr><td>Conference</td><td>Feb 10–12</td><td>3</td><td><span class="badge badge-success">Approved</span></td></tr>
+                  <tr><td>Personal</td><td>Jan 22</td><td>1</td><td><span class="badge badge-danger">Rejected</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SEND WARNINGS ===== -->
+      <div class="view" id="view-alerts">
+        <div class="page-header">
+          <div class="page-header-left"><h1>Send Warnings</h1><p>Notify students with low attendance via WhatsApp & Email</p></div>
+          <div class="page-header-right">
+            <button class="btn btn-primary" onclick="showToast('Bulk warnings sent to 8 students via WhatsApp & Email!','success')">Send All Warnings</button>
+          </div>
+        </div>
+        <div class="alert-banner warning mb-6">
+          📱 WhatsApp and Email warnings will be dispatched to the student's registered contact number and institutional email address.
+        </div>
+        <div class="card" style="padding:0">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Student</th><th>Roll No.</th><th>Subject</th><th>Attendance</th><th>Phone</th><th>Email</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr><td>Rohan M.</td><td>21CS034</td><td>CS302 DBMS</td><td><span class="att-pct low">48%</span></td><td>+91 98765 43210</td><td>rohan@college.edu</td><td><button class="btn btn-xs btn-warning" style="background:var(--warning-light);color:var(--warning);border:1px solid rgba(243,156,18,0.2)" onclick="showToast('Warning sent to Rohan M.!','warning')">Send Warning</button></td></tr>
+                <tr><td>Aisha N.</td><td>21CS067</td><td>CS303 OS</td><td><span class="att-pct low">52%</span></td><td>+91 87654 32109</td><td>aisha@college.edu</td><td><button class="btn btn-xs btn-warning" style="background:var(--warning-light);color:var(--warning);border:1px solid rgba(243,156,18,0.2)" onclick="showToast('Warning sent to Aisha N.!','warning')">Send Warning</button></td></tr>
+                <tr><td>Rahul T.</td><td>21CS088</td><td>CS302 DBMS</td><td><span class="att-pct medium">68%</span></td><td>+91 76543 21098</td><td>rahul@college.edu</td><td><button class="btn btn-xs btn-warning" style="background:var(--warning-light);color:var(--warning);border:1px solid rgba(243,156,18,0.2)" onclick="showToast('Warning sent to Rahul T.!','warning')">Send Warning</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="/dashboard.js"></script>
+<script>
+// Attendance marking
+const studentList = [
+  'Arjun Nair','Aisha Noor','Bhavesh Patel','Deepa Raj','Dev Kumar',
+  'Fatima Sheikh','Ganesh T.','Harish M.','Ishaan R.','Janaki S.',
+  'Karthik P.','Lakshmi V.','Mohan S.','Nisha K.','Om P.',
+  'Pooja M.','Rahul T.','Rohan M.','Sneha Pillai','Uma R.',
+  'Varun S.','Vijay K.','Ananya B.','Aryan D.','Bharathi N.',
+  'Chetan M.','Dinesh K.','Esha P.','Faisal A.','Girish T.',
+  'Hema S.','Indira K.','Jagdish P.','Kavitha M.','Lokesh R.',
+  'Madhu S.','Naveen K.','Nithya P.','Ojas T.','Preethi R.',
+  'Rajan V.','Sarika M.'
+];
+
+function loadStudents() {
+  const tbody = document.getElementById('attendanceTbody');
+  let count = 0;
+  tbody.innerHTML = studentList.map((name, i) => {
+    const rollPfx = '21CS' + String(i + 1).padStart(3, '0');
+    const prevAtt = Math.floor(Math.random() * 40 + 55);
+    const cls = prevAtt >= 75 ? 'high' : prevAtt >= 60 ? 'medium' : 'low';
+    return `<tr>
+      <td style="color:var(--gray-500)">${i+1}</td>
+      <td>${rollPfx}</td>
+      <td>${name}</td>
+      <td><span class="att-pct ${cls}">${prevAtt}%</span></td>
+      <td style="text-align:center">
+        <input type="radio" name="att_${i}" value="present" onchange="updateCount()" style="accent-color:var(--success);width:16px;height:16px;cursor:pointer"/>
+      </td>
+      <td style="text-align:center">
+        <input type="radio" name="att_${i}" value="absent" onchange="updateCount()" style="accent-color:var(--danger);width:16px;height:16px;cursor:pointer"/>
+      </td>
+      <td style="text-align:center">
+        <input type="radio" name="att_${i}" value="od" onchange="updateCount()" style="accent-color:var(--warning);width:16px;height:16px;cursor:pointer"/>
+      </td>
+    </tr>`;
+  }).join('');
+}
+loadStudents();
+
+function updateCount() {
+  const count = document.querySelectorAll('input[type="radio"][value="present"]:checked').length;
+  document.getElementById('presentCount').textContent = count;
+}
+
+function markAll(status) {
+  document.querySelectorAll(`input[type="radio"][value="${status}"]`).forEach(r => {
+    r.checked = true;
+  });
+  updateCount();
+  showToast(`All students marked as ${status}`, 'info');
+}
+
+function submitAttendance() {
+  const total = studentList.length;
+  const present = document.querySelectorAll('input[type="radio"][value="present"]:checked').length;
+  const absent = document.querySelectorAll('input[type="radio"][value="absent"]:checked').length;
+  const od = document.querySelectorAll('input[type="radio"][value="od"]:checked').length;
+  if (present + absent + od < total) {
+    showToast(`Please mark attendance for all ${total} students first!`, 'error');
+    return;
+  }
+  showToast(`Attendance submitted! Present: ${present}, Absent: ${absent}, OD: ${od}`, 'success');
+}
+</script>
+</body>
+</html>
