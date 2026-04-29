@@ -36,8 +36,22 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-app.get("/api/health", (_req, res) => {
+/*app.get("/api/health", (_req, res) => {
   res.json({ success: true, message: "SAMS API is healthy.", origins: allowedOrigins });
+});*/
+app.get('/api/seed-now', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const collections = await mongoose.connection.db.collections();
+    for (let collection of collections) {
+      await collection.deleteMany({});
+    }
+    const runSeed = require('./seed');
+    await runSeed();
+    res.json({ success: true, message: 'Seeded successfully!' });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
 });
 
 app.use("/api/auth", authRoutes);
