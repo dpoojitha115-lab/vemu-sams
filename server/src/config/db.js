@@ -24,7 +24,7 @@ const connectDB = async () => {
 };
 
 module.exports = connectDB;*/
-const mongoose = require("mongoose");
+/*const mongoose = require("mongoose");
 
 const connectDB = async () => {
   const mongoUri = process.env.MONGO_URI; //|| "mongodb://127.0.0.1:27017/vemu-sams";//
@@ -33,4 +33,19 @@ const connectDB = async () => {
   return mongoose.connection;
 };
 
-module.exports =  { connectDB };
+module.exports =  { connectDB };*/
+const mongoose = require("mongoose");
+
+const connectDB = async () => {
+  const mongoUri = process.env.MONGO_URI;
+  console.log("MONGO_URI:", mongoUri ? "found" : "undefined");
+  if (!mongoUri) {
+    throw new Error("MONGO_URI environment variable is not set");
+  }
+  mongoose.set("strictQuery", true);
+  await mongoose.connect(mongoUri);
+  console.log("MongoDB connected!");
+  return mongoose.connection;
+};
+
+module.exports = { connectDB };
