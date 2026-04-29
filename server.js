@@ -1160,6 +1160,11 @@ app.get('/reset-password', (_, res) => res.redirect('/reset-password.html'));
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Route not found.' });
 });
+app.get('/api/seed-now', async (req, res) => {
+  const { seedDatabase } = require('./seed');
+  await seedDatabase();
+  res.json({ message: 'Seeded!' });
+});
 
 app.listen(PORT,'0.0.0.0', () => {
   console.log(`SAMS API running on port ${PORT}`);
