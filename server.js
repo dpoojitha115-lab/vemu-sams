@@ -9,7 +9,7 @@ const cors = require('cors');
 const multer = require('multer');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'sams_secret_2026';
 const SALT_ROUNDS = 10;
 const ROOT = __dirname;
@@ -1161,8 +1161,9 @@ app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Route not found.' });
 });
 
-app.listen(PORT, () => {
-  console.log(`SAMS server running at http://localhost:${PORT}`);
+app.listen(PORT,'0.0.0.0', () => {
+  console.log(`SAMS API running on port ${PORT}`);
+  //console.log(`SAMS server running at http://localhost:${PORT}`);//
   console.log('Demo logins: ADMIN001/admin123, HOD001/hod123, TCH001/teach123, STU001/stu123');
 });
 
