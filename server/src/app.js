@@ -49,5 +49,13 @@ app.use("/api/academic", academicRoutes);
 app.use("/api/settings", settingsRoutes);
 
 app.use(errorHandler);
-
+app.get('/api/seed-now', async (req, res) => {
+  try {
+    const seedDatabase = require('./seed');
+    await seedDatabase();
+    res.json({ success: true, message: 'Seeded successfully!' });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
 module.exports = app;
