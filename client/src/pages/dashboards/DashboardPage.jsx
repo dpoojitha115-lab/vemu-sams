@@ -226,6 +226,8 @@ export default function DashboardPage() {
   const [profile, setProfile] = useState(null);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [summaryReady, setSummaryReady] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [departments, setDepartments] = useState([]);
   const [students, setStudents] = useState([]);
@@ -370,18 +372,25 @@ export default function DashboardPage() {
   }
 
   async function fetchCollections() {
+    setDetailsLoading(true);
     const requests = [api.get("/departments")];
     const handlers = [
       (response) => setDepartments(response.data.items),
     ];
 
-    const needSubjects = ["attendance", "subjects", "students"].includes(activeSection) || user.role !== "admin";
-    const needReports = ["reports", "performance", "overview", "subjects"].includes(activeSection) || user.role === "student";
+    const needSubjects =
+      activeSection === "attendance" ||
+      activeSection === "subjects" ||
+      (activeSection === "students" && user.role === "admin");
+    const needReports =
+      activeSection === "reports" ||
+      activeSection === "performance" ||
+      (activeSection === "analytics" && user.role === "hod");
     const needAttendanceContext = activeSection === "attendance";
-    const needAttendanceRecords = activeSection === "records" || user.role === "student";
+    const needAttendanceRecords = activeSection === "records" || activeSection === "history";
     const needStudents = ["students", "attendance"].includes(activeSection) && user.role !== "student";
-    const needFaculty = ["faculty", "reports", "analytics", "overview"].includes(activeSection) && (user.role === "admin" || user.role === "hod");
-    const needTimetable = ["overview", "attendance"].includes(activeSection) || user.role === "student";
+    const needFaculty = ["faculty", "reports", "analytics"].includes(activeSection) && (user.role === "admin" || user.role === "hod");
+    const needTimetable = activeSection === "overview" || activeSection === "attendance";
     const needHolidays = activeSection === "settings";
     const needCorrections = activeSection === "settings" || activeSection === "history";
 
@@ -470,15 +479,21 @@ export default function DashboardPage() {
       setFaculty([]);
     }
 
-    const responses = await Promise.all(requests);
-    responses.forEach((response, index) => handlers[index](response));
+    try {
+      const responses = await Promise.all(requests);
+      responses.forEach((response, index) => handlers[index](response));
+    } finally {
+      setDetailsLoading(false);
+    }
   }
 
   async function bootstrap() {
     setLoading(true);
+    setSummaryReady(false);
     setLoadError("");
     try {
-      await Promise.all([fetchDashboard(), fetchProfile(), fetchSettings(), fetchCollections()]);
+      await Promise.all([fetchDashboard(), fetchProfile(), fetchSettings()]);
+      setSummaryReady(true);
     } catch (error) {
       const message = error.response?.data?.message || "Unable to load dashboard.";
       setLoadError(message);
@@ -490,13 +505,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     bootstrap();
-    const interval = setInterval(bootstrap, 30000);
+    const interval = setInterval(() => {
+      Promise.all([fetchDashboard(), fetchProfile()]).catch(() => {});
+    }, 30000);
     return () => clearInterval(interval);
   }, [user.role]);
 
   useEffect(() => {
-    fetchCollections().catch(() => {});
-  }, [activeSection, deferredSearch, filters.department, filters.year, filters.section, studentPagination.page]);
+    if (!summaryReady) return;
+    fetchCollections().catch((error) => {
+      toast.error(error.response?.data?.message || "Unable to load dashboard details.");
+      setDetailsLoading(false);
+    });
+  }, [summaryReady, activeSection, deferredSearch, filters.department, filters.year, filters.section, studentPagination.page]);
 
   useEffect(() => {
     setStudentPagination((current) => ({ ...current, page: 1 }));

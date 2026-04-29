@@ -229,6 +229,15 @@ async function runSeed() {
     { title: "Semester Break", date: "2026-06-01", description: "Planned semester break", type: "semester" },
   ]);
   await Setting.create(setting);
+  await Promise.all([
+    User.syncIndexes(),
+    Department.syncIndexes(),
+    Faculty.syncIndexes(),
+    Student.syncIndexes(),
+    Subject.syncIndexes(),
+    Attendance.syncIndexes(),
+    Timetable.syncIndexes(),
+  ]);
 
   console.log("Seed completed successfully.");
   console.log("Admin login: admin / Admin@123");

@@ -5,11 +5,12 @@ const Notification = require("../models/Notification");
 const Setting = require("../models/Setting");
 const Student = require("../models/Student");
 const Subject = require("../models/Subject");
-const User = require("../models/User");
 const { ATTENDANCE_STATUS, ROLES } = require("../utils/constants");
 
 const dashboardCache = new Map();
-const DASHBOARD_CACHE_TTL = 1000 * 30;
+const referenceCache = { createdAt: 0, value: null };
+const DASHBOARD_CACHE_TTL = 1000 * 60 * 2;
+const REFERENCE_CACHE_TTL = 1000 * 60 * 5;
 
 function attendedValue(status) {
   return status === ATTENDANCE_STATUS.PRESENT || status === ATTENDANCE_STATUS.LATE ? 1 : 0;
@@ -20,30 +21,33 @@ function toPercent(attended, total) {
   return Number(((attended / total) * 100).toFixed(1));
 }
 
-async function getBaseCollections() {
-  const [students, faculty, departments, subjects, records, setting] = await Promise.all([
-    Student.find().populate("department user").lean(),
-    Faculty.find().populate("department user").lean(),
+function getEntityId(value) {
+  if (!value) return "";
+  return String(value._id || value);
+}
+
+async function getReferenceData() {
+  if (referenceCache.value && Date.now() - referenceCache.createdAt < REFERENCE_CACHE_TTL) {
+    return referenceCache.value;
+  }
+
+  const [departments, setting] = await Promise.all([
     Department.find().populate("hod", "name email").lean(),
-    Subject.find().populate("department faculty").lean(),
-    Attendance.find().populate("subject department faculty entries.student").lean(),
     Setting.findOne().lean(),
   ]);
 
-  return {
-    students,
-    faculty,
-    departments,
-    subjects,
-    records,
-    setting,
-  };
+  const value = { departments, setting };
+  referenceCache.createdAt = Date.now();
+  referenceCache.value = value;
+  return value;
 }
 
-function ensureSubjectBucket(target, subject) {
-  if (!target.bySubject[subject.name]) {
-    target.bySubject[subject.name] = {
-      subjectCode: subject.code,
+function ensureSubjectBucket(target, record) {
+  const subjectName = record.subject?.name || record.subjectName || "Unknown Subject";
+  const subjectCode = record.subject?.code || record.subjectCode || "N/A";
+  if (!target.bySubject[subjectName]) {
+    target.bySubject[subjectName] = {
+      subjectCode,
       total: 0,
       attended: 0,
       present: 0,
@@ -70,8 +74,10 @@ function buildStudentAttendanceMap(records) {
   const summary = new Map();
 
   records.forEach((record) => {
-    record.entries.forEach((entry) => {
-      const studentId = String(entry.student._id);
+    (record.entries || []).forEach((entry) => {
+      const studentId = getEntityId(entry.student);
+      if (!studentId) return;
+
       const status = entry.status;
       const current = summary.get(studentId) || {
         total: 0,
@@ -91,15 +97,16 @@ function buildStudentAttendanceMap(records) {
       if (status === ATTENDANCE_STATUS.LATE) current.late += 1;
       if (status === ATTENDANCE_STATUS.ABSENT) current.absent += 1;
 
-      ensureSubjectBucket(current, record.subject);
-      const subjectBucket = current.bySubject[record.subject.name];
+      ensureSubjectBucket(current, record);
+      const subjectKey = record.subject?.name || record.subjectName || "Unknown Subject";
+      const subjectBucket = current.bySubject[subjectKey];
       subjectBucket.total += 1;
       subjectBucket.attended += attendedValue(status);
       if (status === ATTENDANCE_STATUS.PRESENT) subjectBucket.present += 1;
       if (status === ATTENDANCE_STATUS.LATE) subjectBucket.late += 1;
       if (status === ATTENDANCE_STATUS.ABSENT) subjectBucket.absent += 1;
 
-      const monthKey = record.date.slice(0, 7);
+      const monthKey = String(record.date).slice(0, 7);
       ensureMonthBucket(current, monthKey);
       const monthBucket = current.byMonth[monthKey];
       monthBucket.total += 1;
@@ -110,15 +117,15 @@ function buildStudentAttendanceMap(records) {
 
       current.history.push({
         date: record.date,
-        subject: record.subject.name,
-        subjectCode: record.subject.code,
+        subject: record.subject?.name || record.subjectName || "Unknown Subject",
+        subjectCode: record.subject?.code || record.subjectCode || "N/A",
         status,
       });
 
       current.calendar.push({
         date: record.date,
         status,
-        subjectCode: record.subject.code,
+        subjectCode: record.subject?.code || record.subjectCode || "N/A",
       });
 
       summary.set(studentId, current);
@@ -128,48 +135,51 @@ function buildStudentAttendanceMap(records) {
   return summary;
 }
 
+function buildAttendanceMatch(scope = {}) {
+  const match = {};
+
+  if (scope.departmentId) match.department = scope.departmentId;
+  if (scope.year) match.year = Number(scope.year);
+  if (scope.section) match.section = String(scope.section).toUpperCase();
+  if (scope.subjectId) match.subject = scope.subjectId;
+  if (scope.facultyId) match.faculty = scope.facultyId;
+
+  return match;
+}
+
 function applyScope(records, scope = {}) {
   return records.filter((record) => {
-    if (scope.departmentId && String(record.department._id) !== String(scope.departmentId)) return false;
+    if (scope.departmentId && getEntityId(record.department) !== String(scope.departmentId)) return false;
     if (scope.year && Number(record.year) !== Number(scope.year)) return false;
     if (scope.section && record.section !== String(scope.section).toUpperCase()) return false;
-    if (scope.subjectId && String(record.subject._id) !== String(scope.subjectId)) return false;
-    if (scope.facultyId && String(record.faculty._id) !== String(scope.facultyId)) return false;
+    if (scope.subjectId && getEntityId(record.subject) !== String(scope.subjectId)) return false;
+    if (scope.facultyId && getEntityId(record.faculty) !== String(scope.facultyId)) return false;
     return true;
   });
 }
 
-function buildDepartmentChart(departments, students, summaryMap) {
+function buildDepartmentChart(departments, aggregateRows) {
+  const rowMap = new Map(aggregateRows.map((row) => [String(row._id), row]));
+
   return departments.map((department) => {
-    const departmentStudents = students.filter(
-      (student) => String(student.department._id) === String(department._id)
-    );
-
-    const totals = departmentStudents.reduce(
-      (acc, student) => {
-        const report = summaryMap.get(String(student._id)) || { attended: 0, total: 0 };
-        acc.attended += report.attended;
-        acc.total += report.total;
-        return acc;
-      },
-      { attended: 0, total: 0 }
-    );
-
+    const row = rowMap.get(String(department._id));
     return {
       name: department.code,
       label: department.name,
-      attendance: toPercent(totals.attended, totals.total),
+      attendance: toPercent(row?.attended || 0, row?.total || 0),
     };
   });
 }
 
-function buildTrend(records, mode) {
+function buildTrendFromDaily(dailyRows, mode) {
   const bucket = {};
-  records.forEach((record) => {
-    let key = record.date;
-    if (mode === "month") key = record.date.slice(0, 7);
+
+  dailyRows.forEach((row) => {
+    let key = row._id;
+
+    if (mode === "month") key = String(row._id).slice(0, 7);
     if (mode === "week") {
-      const current = new Date(record.date);
+      const current = new Date(row._id);
       const start = new Date(current);
       start.setDate(current.getDate() - current.getDay());
       key = start.toISOString().slice(0, 10);
@@ -178,10 +188,9 @@ function buildTrend(records, mode) {
     if (!bucket[key]) {
       bucket[key] = { label: key, total: 0, attended: 0 };
     }
-    record.entries.forEach((entry) => {
-      bucket[key].total += 1;
-      bucket[key].attended += attendedValue(entry.status);
-    });
+
+    bucket[key].total += row.total;
+    bucket[key].attended += row.attended;
   });
 
   return Object.values(bucket)
@@ -194,10 +203,11 @@ function buildTrend(records, mode) {
 
 function buildFacultySummary(facultyList, records) {
   return facultyList.map((facultyMember) => {
-    const scoped = records.filter((record) => String(record.faculty._id) === String(facultyMember._id));
+    const facultyId = String(facultyMember._id);
+    const scoped = records.filter((record) => getEntityId(record.faculty) === facultyId);
     const totals = scoped.reduce(
       (acc, record) => {
-        record.entries.forEach((entry) => {
+        (record.entries || []).forEach((entry) => {
           acc.total += 1;
           acc.attended += attendedValue(entry.status);
         });
@@ -210,7 +220,7 @@ function buildFacultySummary(facultyList, records) {
       id: facultyMember._id,
       name: facultyMember.name,
       designation: facultyMember.designation,
-      department: facultyMember.department.code,
+      department: facultyMember.department?.code || facultyMember.departmentCode || "",
       classesHandled: scoped.length,
       attendanceAverage: toPercent(totals.attended, totals.total),
     };
@@ -251,124 +261,302 @@ async function getDashboardData(user) {
     return cached.value;
   }
 
-  const { students, faculty, departments, subjects, records, setting } = await getBaseCollections();
-  const studentSummaryMap = buildStudentAttendanceMap(records);
+  const [{ departments, setting }, facultyProfile, studentProfile] = await Promise.all([
+    getReferenceData(),
+    user.role === ROLES.FACULTY ? Faculty.findOne({ user: user._id }).lean() : Promise.resolve(null),
+    user.role === ROLES.STUDENT
+      ? Student.findOne({ user: user._id }).populate("department user").lean()
+      : Promise.resolve(null),
+  ]);
+
   const threshold = setting?.threshold || 75;
+  const scopedDepartment =
+    user.role === ROLES.HOD || user.role === ROLES.FACULTY || user.role === ROLES.STUDENT
+      ? departments.find((item) => item.code === user.departmentCode)
+      : null;
 
-  let scopedStudents = students;
-  let scopedFaculty = faculty;
-  let scopedDepartments = departments;
-  let scopedSubjects = subjects;
-  let scopedRecords = records;
-
-  if (user.role === ROLES.HOD || user.role === ROLES.FACULTY || user.role === ROLES.STUDENT) {
-    const department = departments.find((item) => item.code === user.departmentCode);
-    if (department) {
-      scopedStudents = students.filter((student) => String(student.department._id) === String(department._id));
-      scopedFaculty = faculty.filter((item) => String(item.department._id) === String(department._id));
-      scopedSubjects = subjects.filter((item) => String(item.department._id) === String(department._id));
-      scopedRecords = records.filter((item) => String(item.department._id) === String(department._id));
-      scopedDepartments = [department];
-    }
-  }
-
-  if (user.role === ROLES.FACULTY) {
-    const facultyProfile = faculty.find((item) => String(item.user._id) === String(user._id));
-    if (facultyProfile) {
-      scopedSubjects = scopedSubjects.filter(
-        (subject) => subject.faculty && String(subject.faculty._id) === String(facultyProfile._id)
-      );
-      scopedRecords = scopedRecords.filter((record) => String(record.faculty._id) === String(facultyProfile._id));
-    }
-  }
-
-  if (user.role === ROLES.STUDENT) {
-    const studentProfile = students.find((item) => String(item.user._id) === String(user._id));
-    if (studentProfile) {
-      const report = studentSummaryMap.get(String(studentProfile._id)) || {
-        total: 0,
-        attended: 0,
-        present: 0,
-        late: 0,
-        absent: 0,
-        bySubject: {},
-        history: [],
-        byMonth: {},
-        calendar: [],
-      };
-
-      const result = {
-        cards: [
-          { title: "Overall Attendance", value: `${toPercent(report.attended, report.total)}%`, helper: "Live attendance percentage" },
-          { title: "Subjects", value: Object.keys(report.bySubject).length, helper: "Active enrolled subjects" },
-          { title: "Attendance Threshold", value: `${threshold}%`, helper: "Minimum required attendance" },
-        ],
-        charts: {
-          donut: [
-            { name: "Present", value: report.present },
-            { name: "Late", value: report.late },
-            { name: "Absent", value: report.absent },
-          ],
-          subjectBreakdown: Object.entries(report.bySubject).map(([name, item]) => ({
-            subject: name,
-            code: item.subjectCode,
-            attendance: toPercent(item.attended, item.total),
-            present: item.present,
-            late: item.late,
-            absent: item.absent,
-          })),
-          monthlyTrends: Object.values(report.byMonth)
-            .sort((a, b) => a.month.localeCompare(b.month))
-            .map((item) => ({
-              month: item.month,
-              attendance: toPercent(item.attended, item.total),
-            })),
+  if (user.role === ROLES.STUDENT && studentProfile) {
+    const studentRows = await Attendance.aggregate([
+      {
+        $match: {
+          department: studentProfile.department._id,
+          year: studentProfile.year,
+          section: studentProfile.section,
+          "entries.student": studentProfile._id,
         },
-        profile: studentProfile,
-        history: report.history.sort((a, b) => b.date.localeCompare(a.date)),
-        calendar: report.calendar.sort((a, b) => b.date.localeCompare(a.date)),
-        threshold,
-        lowAttendanceWarning: toPercent(report.attended, report.total) < threshold,
-      };
-      dashboardCache.set(cacheKey, { createdAt: Date.now(), value: result });
-      return result;
-    }
+      },
+      { $unwind: "$entries" },
+      { $match: { "entries.student": studentProfile._id } },
+      {
+        $lookup: {
+          from: "subjects",
+          localField: "subject",
+          foreignField: "_id",
+          as: "subjectDoc",
+        },
+      },
+      { $unwind: "$subjectDoc" },
+      {
+        $project: {
+          date: 1,
+          status: "$entries.status",
+          subjectName: "$subjectDoc.name",
+          subjectCode: "$subjectDoc.code",
+        },
+      },
+    ]);
+
+    const report = {
+      total: 0,
+      attended: 0,
+      present: 0,
+      late: 0,
+      absent: 0,
+      bySubject: {},
+      byMonth: {},
+      history: [],
+      calendar: [],
+    };
+
+    studentRows.forEach((row) => {
+      report.total += 1;
+      report.attended += attendedValue(row.status);
+      if (row.status === ATTENDANCE_STATUS.PRESENT) report.present += 1;
+      if (row.status === ATTENDANCE_STATUS.LATE) report.late += 1;
+      if (row.status === ATTENDANCE_STATUS.ABSENT) report.absent += 1;
+
+      if (!report.bySubject[row.subjectName]) {
+        report.bySubject[row.subjectName] = {
+          subjectCode: row.subjectCode,
+          total: 0,
+          attended: 0,
+          present: 0,
+          late: 0,
+          absent: 0,
+        };
+      }
+
+      const subjectBucket = report.bySubject[row.subjectName];
+      subjectBucket.total += 1;
+      subjectBucket.attended += attendedValue(row.status);
+      if (row.status === ATTENDANCE_STATUS.PRESENT) subjectBucket.present += 1;
+      if (row.status === ATTENDANCE_STATUS.LATE) subjectBucket.late += 1;
+      if (row.status === ATTENDANCE_STATUS.ABSENT) subjectBucket.absent += 1;
+
+      const monthKey = String(row.date).slice(0, 7);
+      if (!report.byMonth[monthKey]) {
+        report.byMonth[monthKey] = { total: 0, attended: 0 };
+      }
+      report.byMonth[monthKey].total += 1;
+      report.byMonth[monthKey].attended += attendedValue(row.status);
+
+      report.history.push({
+        date: row.date,
+        subject: row.subjectName,
+        subjectCode: row.subjectCode,
+        status: row.status,
+      });
+
+      report.calendar.push({
+        date: row.date,
+        status: row.status,
+        subjectCode: row.subjectCode,
+      });
+    });
+
+    const result = {
+      cards: [
+        { title: "Overall Attendance", value: `${toPercent(report.attended, report.total)}%`, helper: "Live attendance percentage" },
+        { title: "Subjects", value: Object.keys(report.bySubject).length, helper: "Active enrolled subjects" },
+        { title: "Attendance Threshold", value: `${threshold}%`, helper: "Minimum required attendance" },
+      ],
+      charts: {
+        donut: [
+          { name: "Present", value: report.present },
+          { name: "Late", value: report.late },
+          { name: "Absent", value: report.absent },
+        ],
+        subjectBreakdown: Object.entries(report.bySubject).map(([name, item]) => ({
+          subject: name,
+          code: item.subjectCode,
+          attendance: toPercent(item.attended, item.total),
+          present: item.present,
+          late: item.late,
+          absent: item.absent,
+        })),
+        monthlyTrends: Object.entries(report.byMonth)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([month, item]) => ({
+            month,
+            attendance: toPercent(item.attended, item.total),
+          })),
+      },
+      profile: studentProfile,
+      history: report.history.sort((a, b) => b.date.localeCompare(a.date)),
+      calendar: report.calendar.sort((a, b) => b.date.localeCompare(a.date)),
+      threshold,
+      lowAttendanceWarning: toPercent(report.attended, report.total) < threshold,
+    };
+
+    dashboardCache.set(cacheKey, { createdAt: Date.now(), value: result });
+    return result;
   }
 
-  const scopedSummaryMap = buildStudentAttendanceMap(scopedRecords);
-  const lowAttendanceStudents = scopedStudents
-    .map((student) => {
-      const report = scopedSummaryMap.get(String(student._id)) || { total: 0, attended: 0 };
+  const studentMatch = scopedDepartment ? { department: scopedDepartment._id } : {};
+  const facultyMatch = scopedDepartment ? { department: scopedDepartment._id } : {};
+  const subjectMatch = scopedDepartment ? { department: scopedDepartment._id } : {};
+  const attendanceScope = scopedDepartment ? { departmentId: scopedDepartment._id } : {};
+
+  if (facultyProfile) {
+    subjectMatch.faculty = facultyProfile._id;
+    attendanceScope.facultyId = facultyProfile._id;
+  }
+
+  const scopedDepartments = scopedDepartment ? [scopedDepartment] : departments;
+  const attendanceMatch = buildAttendanceMatch(attendanceScope);
+
+  const [studentCount, facultyList, subjectCount, departmentAttendanceRows, dailyRows, lowAttendanceRows, facultyRows] = await Promise.all([
+    Student.countDocuments(studentMatch),
+    Faculty.find(facultyMatch).populate("department").lean(),
+    Subject.countDocuments(subjectMatch),
+    Attendance.aggregate([
+      { $match: attendanceMatch },
+      { $unwind: "$entries" },
+      {
+        $group: {
+          _id: "$department",
+          total: { $sum: 1 },
+          attended: {
+            $sum: {
+              $cond: [{ $in: ["$entries.status", [ATTENDANCE_STATUS.PRESENT, ATTENDANCE_STATUS.LATE]] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]),
+    Attendance.aggregate([
+      { $match: attendanceMatch },
+      { $unwind: "$entries" },
+      {
+        $group: {
+          _id: "$date",
+          total: { $sum: 1 },
+          attended: {
+            $sum: {
+              $cond: [{ $in: ["$entries.status", [ATTENDANCE_STATUS.PRESENT, ATTENDANCE_STATUS.LATE]] }, 1, 0],
+            },
+          },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
+    Attendance.aggregate([
+      { $match: attendanceMatch },
+      { $unwind: "$entries" },
+      {
+        $group: {
+          _id: "$entries.student",
+          total: { $sum: 1 },
+          attended: {
+            $sum: {
+              $cond: [{ $in: ["$entries.status", [ATTENDANCE_STATUS.PRESENT, ATTENDANCE_STATUS.LATE]] }, 1, 0],
+            },
+          },
+        },
+      },
+    ]),
+    Attendance.aggregate([
+      { $match: attendanceMatch },
+      { $unwind: "$entries" },
+      {
+        $group: {
+          _id: "$faculty",
+          total: { $sum: 1 },
+          attended: {
+            $sum: {
+              $cond: [{ $in: ["$entries.status", [ATTENDANCE_STATUS.PRESENT, ATTENDANCE_STATUS.LATE]] }, 1, 0],
+            },
+          },
+          classesHandled: { $addToSet: "$_id" },
+        },
+      },
+    ]),
+  ]);
+
+  const facultySummaryMap = new Map(
+    facultyRows.map((row) => [
+      String(row._id),
+      {
+        attendanceAverage: toPercent(row.attended, row.total),
+        classesHandled: row.classesHandled.length,
+      },
+    ])
+  );
+
+  const lowStudentSummaries = lowAttendanceRows
+    .map((row) => ({
+      studentId: String(row._id),
+      percentage: toPercent(row.attended, row.total),
+      total: row.total,
+    }))
+    .filter((row) => row.total && row.percentage < threshold)
+    .sort((a, b) => a.percentage - b.percentage)
+    .slice(0, 30);
+
+  const lowStudentDetails = lowStudentSummaries.length
+    ? await Student.find({ _id: { $in: lowStudentSummaries.map((row) => row.studentId) } })
+        .select("name rollNumber year section email")
+        .lean()
+    : [];
+
+  const lowStudentMap = new Map(lowStudentDetails.map((student) => [String(student._id), student]));
+  const lowAttendanceStudents = lowStudentSummaries
+    .map((row) => {
+      const student = lowStudentMap.get(row.studentId);
+      if (!student) return null;
       return {
         id: student._id,
         name: student.name,
         rollNumber: student.rollNumber,
         year: student.year,
         section: student.section,
-        percentage: toPercent(report.attended, report.total),
+        percentage: row.percentage,
         email: student.email,
       };
     })
-    .filter((student) => student.percentage < threshold)
-    .sort((a, b) => a.percentage - b.percentage);
+    .filter(Boolean);
 
   const result = {
     cards: [
-      { title: "Total Students", value: scopedStudents.length, helper: "Across active cohorts" },
-      { title: "Total Faculty", value: scopedFaculty.length, helper: "Teaching members" },
+      { title: "Total Students", value: studentCount, helper: "Across active cohorts" },
+      { title: "Total Faculty", value: facultyList.length, helper: "Teaching members" },
       { title: "Departments", value: scopedDepartments.length, helper: "Managed departments" },
-      { title: "Subjects", value: scopedSubjects.length, helper: "Mapped academic subjects" },
+      { title: "Subjects", value: subjectCount, helper: "Mapped academic subjects" },
     ],
     charts: {
-      departmentAttendance: buildDepartmentChart(scopedDepartments, scopedStudents, scopedSummaryMap),
-      monthlyTrends: buildTrend(scopedRecords, "month"),
-      weeklyTrends: buildTrend(scopedRecords, "week"),
-      dailyTrends: buildTrend(scopedRecords, "day").slice(-14),
+      departmentAttendance: buildDepartmentChart(scopedDepartments, departmentAttendanceRows),
+      monthlyTrends: buildTrendFromDaily(dailyRows, "month"),
+      weeklyTrends: buildTrendFromDaily(dailyRows, "week"),
+      dailyTrends: buildTrendFromDaily(dailyRows, "day").slice(-14),
     },
     lowAttendanceStudents,
     threshold,
-    facultySummary: buildFacultySummary(scopedFaculty, scopedRecords),
+    facultySummary: facultyList.map((facultyMember) => {
+      const aggregate = facultySummaryMap.get(String(facultyMember._id)) || {
+        attendanceAverage: 0,
+        classesHandled: 0,
+      };
+      return {
+        id: facultyMember._id,
+        name: facultyMember.name,
+        designation: facultyMember.designation,
+        department: facultyMember.department?.code || "",
+        classesHandled: aggregate.classesHandled,
+        attendanceAverage: aggregate.attendanceAverage,
+      };
+    }),
   };
+
   dashboardCache.set(cacheKey, { createdAt: Date.now(), value: result });
   return result;
 }
@@ -399,43 +587,56 @@ function buildAttendanceReportRows(students, summaryMap) {
 }
 
 async function getReportData(user, filters = {}) {
-  const { students, faculty, departments, records } = await getBaseCollections();
+  const [{ departments }, facultyProfile] = await Promise.all([
+    getReferenceData(),
+    user.role === ROLES.FACULTY ? Faculty.findOne({ user: user._id }).lean() : Promise.resolve(null),
+  ]);
 
-  let scope = { ...filters };
+  const scope = { ...filters };
   if (scope.department) {
     const selectedDepartment = departments.find((item) => item.code === String(scope.department).toUpperCase());
     if (selectedDepartment) scope.departmentId = selectedDepartment._id;
   }
+
   if (user.role === ROLES.HOD || user.role === ROLES.FACULTY || user.role === ROLES.STUDENT) {
     const department = departments.find((item) => item.code === user.departmentCode);
     if (department) scope.departmentId = department._id;
   }
 
-  if (user.role === ROLES.FACULTY) {
-    const facultyProfile = faculty.find((item) => String(item.user._id) === String(user._id));
-    if (facultyProfile) scope.facultyId = facultyProfile._id;
+  if (facultyProfile) {
+    scope.facultyId = facultyProfile._id;
   }
+
+  const studentQuery = {};
+  if (scope.departmentId) studentQuery.department = scope.departmentId;
+  if (scope.year) studentQuery.year = Number(scope.year);
+  if (scope.section) studentQuery.section = String(scope.section).toUpperCase();
+
+  if (user.role === ROLES.STUDENT) {
+    studentQuery.user = user._id;
+  }
+
+  const attendanceMatch = buildAttendanceMatch(scope);
+  const facultyQuery = scope.departmentId ? { department: scope.departmentId } : {};
+
+  const [students, records, facultyList] = await Promise.all([
+    Student.find(studentQuery).populate("department user").lean(),
+    Attendance.find(attendanceMatch)
+      .select("date department subject faculty year section entries")
+      .populate("department", "code name")
+      .populate("subject", "name code")
+      .populate("faculty", "name designation department")
+      .lean(),
+    Faculty.find(facultyQuery).populate("department").lean(),
+  ]);
 
   const scopedRecords = applyScope(records, scope);
   const scopedSummaryMap = buildStudentAttendanceMap(scopedRecords);
-  let scopedStudents = students.filter((student) => {
-    if (scope.departmentId && String(student.department._id) !== String(scope.departmentId)) return false;
-    if (scope.year && Number(student.year) !== Number(scope.year)) return false;
-    if (scope.section && student.section !== String(scope.section).toUpperCase()) return false;
-    return true;
-  });
-
-  if (user.role === ROLES.STUDENT) {
-    scopedStudents = scopedStudents.filter((student) => String(student.user._id) === String(user._id));
-  }
 
   return {
-    rows: buildAttendanceReportRows(scopedStudents, scopedSummaryMap),
+    rows: buildAttendanceReportRows(students, scopedSummaryMap),
     scopedRecords,
-    facultySummary: buildFacultySummary(
-      faculty.filter((item) => !scope.departmentId || String(item.department._id) === String(scope.departmentId)),
-      scopedRecords
-    ),
+    facultySummary: buildFacultySummary(facultyList, scopedRecords),
   };
 }
 
@@ -457,9 +658,11 @@ async function getProfileBundle(user) {
 }
 
 async function seedLowAttendanceAlerts() {
-  const students = await Student.find().populate("user").lean();
-  const records = await Attendance.find().populate("subject department faculty entries.student").lean();
-  const setting = await Setting.findOne().lean();
+  const [students, records, setting] = await Promise.all([
+    Student.find().populate("user").lean(),
+    Attendance.find().select("date subject entries").populate("subject", "name code").lean(),
+    Setting.findOne().lean(),
+  ]);
   const summaryMap = buildStudentAttendanceMap(records);
   const threshold = setting?.threshold || 75;
 
