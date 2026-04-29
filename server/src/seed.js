@@ -243,8 +243,8 @@ async function runSeed() {
   process.exit(0);
 }
 
-runSeed().catch((error) => {
+/*runSeed().catch((error) => {
   console.error(error);
   process.exit(1);
-});
+});*/
 module.exports = runSeed;
