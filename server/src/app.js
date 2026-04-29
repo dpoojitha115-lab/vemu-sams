@@ -51,8 +51,8 @@ app.use("/api/settings", settingsRoutes);
 app.use(errorHandler);
 app.get('/api/seed-now', async (req, res) => {
   try {
-    const seedDatabase = require('./seed');
-    await seedDatabase();
+    const runSeed = require('./seed');
+    await runSeed();
     res.json({ success: true, message: 'Seeded successfully!' });
   } catch (error) {
     res.json({ success: false, error: error.message });
